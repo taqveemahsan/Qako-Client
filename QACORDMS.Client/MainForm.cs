@@ -53,12 +53,10 @@ namespace QACORDMS.Client
 
         private void CustomizeUIForRole()
         {
-            // Add User menu item ko initialize karo
             addUserMenuItem = new ToolStripMenuItem("Add User");
             addUserMenuItem.Click += AddUserMenuItem_Click;
             menuStrip.Items.Add(addUserMenuItem);
 
-            // Sirf Partner ko Add User dikhega
             if (_userRole == "Partner")
             {
                 addUserMenuItem.Visible = true;
@@ -66,7 +64,7 @@ namespace QACORDMS.Client
             }
             else
             {
-                addUserMenuItem.Visible = false; // Baaki roles ke liye hide
+                addUserMenuItem.Visible = false; 
             }
         }
 
@@ -111,9 +109,9 @@ namespace QACORDMS.Client
             if (e.Button == MouseButtons.Right && _userRole == "Partner")
             {
                 int index = ProjectListView.IndexFromPoint(e.Location);
-                if (index != ListBox.NoMatches) // Valid item pe click hua hai
+                if (index != ListBox.NoMatches) 
                 {
-                    ProjectListView.SelectedIndex = index; // Item select karo
+                    ProjectListView.SelectedIndex = index; 
                     var selectedProjectName = ProjectListView.Items[index].ToString();
                     _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
 
@@ -127,7 +125,7 @@ namespace QACORDMS.Client
                             permissionForm.ShowDialog();
                         };
                         contextMenu.Items.Add(addPermissionItem);
-                        contextMenu.Show(ProjectListView, e.Location); // Menu dikhao
+                        contextMenu.Show(ProjectListView, e.Location); 
                     }
                 }
             }

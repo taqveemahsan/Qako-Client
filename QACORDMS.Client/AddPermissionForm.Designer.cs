@@ -90,7 +90,7 @@
             // AddPermissionForm
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(600, 420); // Size thoda bada kiya
+            this.ClientSize = new System.Drawing.Size(600, 420);
             this.Controls.Add(this.lblTitle);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.dgvUsers);
