@@ -5,6 +5,7 @@ namespace QACORDMS.Client
     public partial class MainForm : Form
     {
         private readonly QACOAPIHelper _apiHelper;
+        private readonly string _userRole; // Role store karne ke liye
 
         private List<Helpers.Client> _clients = new List<Helpers.Client>();
         private List<Helpers.ClientProject> _projects = new List<Helpers.ClientProject>();
@@ -12,33 +13,137 @@ namespace QACORDMS.Client
         private Helpers.Client _selectedClient = new Helpers.Client();
         private Helpers.ClientProject _selectedProject = new Helpers.ClientProject();
 
-        private string tempFolderPath = Path.Combine(Path.GetTempPath(), "DriveTemp"); // Temp folder for downloaded files
-        private bool isProcessingDoubleClick = false; // Flag to prevent multiple executions
-        public MainForm(QACOAPIHelper apiHelper)
+        private string tempFolderPath = Path.Combine(Path.GetTempPath(), "DriveTemp");
+        private bool isProcessingDoubleClick = false;
+        private string CurrentFolderId { get; set; }
+        private Stack<string> FolderHistory { get; set; } = new Stack<string>();
+
+        // Naya menu item for Add User
+        private ToolStripMenuItem addUserMenuItem;
+        public MainForm(QACOAPIHelper apiHelper, string userRole = null)
         {
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
+            _userRole = userRole;
             InitializeComponent();
             LoadClientsAsync();
 
-            // Temp folder create karna agar nahi hai
             if (!Directory.Exists(tempFolderPath))
                 Directory.CreateDirectory(tempFolderPath);
 
-            // listView1 ke columns set karna agar already nahi hain
             listView1.Columns.Add("Name", 200);
             listView1.Columns.Add("Type", 100);
             listView1.Columns.Add("Size", 100);
 
-            // Double-click event add karna
             listView1.DoubleClick += ListView1_DoubleClick;
-
-            // Add ContextMenuStrip to listView1
             listView1.ContextMenuStrip = CreateContextMenu();
-
-            // Enable drag-and-drop
             listView1.AllowDrop = true;
             listView1.DragEnter += ListView1_DragEnter;
             listView1.DragDrop += ListView1_DragDrop;
+
+            ClientListBox.KeyDown += ClientListBox_KeyDown;
+            ClientListBox.Focus();
+            ProjectListView.KeyDown += ProjectListView_KeyDown;
+
+            //ProjectListView.MouseClick += ProjectListView_MouseClick;
+            ProjectListView.MouseDown += ProjectListView_MouseDown;
+
+            // Role-based UI customization
+            CustomizeUIForRole();
+        }
+
+        private void CustomizeUIForRole()
+        {
+            // Add User menu item ko initialize karo
+            addUserMenuItem = new ToolStripMenuItem("Add User");
+            addUserMenuItem.Click += AddUserMenuItem_Click;
+            menuStrip.Items.Add(addUserMenuItem);
+
+            // Sirf Partner ko Add User dikhega
+            if (_userRole == "Partner")
+            {
+                addUserMenuItem.Visible = true;
+                statusLabel.Text = "Logged in as Partner";
+            }
+            else
+            {
+                addUserMenuItem.Visible = false; // Baaki roles ke liye hide
+            }
+        }
+
+        private void ProjectListView_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && _userRole == "Partner")
+            {
+                int index = ProjectListView.IndexFromPoint(e.Location);
+                if (index != ListBox.NoMatches)
+                {
+                    ProjectListView.SelectedIndex = index;
+                    var selectedProjectName = ProjectListView.Items[index].ToString();
+                    
+                    _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
+
+                    if (_selectedProject != null && _selectedProject.Id != Guid.Empty)
+                    {
+                        var contextMenu = new ContextMenuStrip();
+                        var addPermissionItem = new ToolStripMenuItem("Add Permissions");
+                        addPermissionItem.Click += (s, ev) =>
+                        {
+                            var permissionForm = new AddPermissionForm(_apiHelper, _selectedProject.Id);
+                            permissionForm.ShowDialog();
+                        };
+                        contextMenu.Items.Add(addPermissionItem);
+                        contextMenu.Show(ProjectListView, e.Location);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Selected project is invalid or not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("No project selected.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+
+        private void ProjectListView_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && _userRole == "Partner")
+            {
+                int index = ProjectListView.IndexFromPoint(e.Location);
+                if (index != ListBox.NoMatches) // Valid item pe click hua hai
+                {
+                    ProjectListView.SelectedIndex = index; // Item select karo
+                    var selectedProjectName = ProjectListView.Items[index].ToString();
+                    _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
+
+                    if (_selectedProject != null)
+                    {
+                        var contextMenu = new ContextMenuStrip();
+                        var addPermissionItem = new ToolStripMenuItem("Add Permissions");
+                        addPermissionItem.Click += (s, ev) =>
+                        {
+                            var permissionForm = new AddPermissionForm(_apiHelper, _selectedProject.Id);
+                            permissionForm.ShowDialog();
+                        };
+                        contextMenu.Items.Add(addPermissionItem);
+                        contextMenu.Show(ProjectListView, e.Location); // Menu dikhao
+                    }
+                }
+            }
+        }
+
+        private void AddUserMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var userForm = new UserForm(_apiHelper);
+                userForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open User form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // Handle DragEnter event
@@ -50,7 +155,6 @@ namespace QACORDMS.Client
                 e.Effect = DragDropEffects.None;
         }
 
-        // Handle DragDrop event
         private async void ListView1_DragDrop(object sender, DragEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
@@ -81,17 +185,17 @@ namespace QACORDMS.Client
             }
         }
 
-        // Create ContextMenuStrip
         private ContextMenuStrip CreateContextMenu()
         {
             var contextMenu = new ContextMenuStrip();
-
-            // Create File option
             var createFileItem = new ToolStripMenuItem("Create File");
             createFileItem.Click += async (s, e) => await CreateFile_Click(s, e);
             contextMenu.Items.Add(createFileItem);
 
-            // Delete File option
+            var createFolderItem = new ToolStripMenuItem("Create Folder");
+            createFolderItem.Click += async (s, e) => await CreateFolder_Click(s, e);
+            contextMenu.Items.Add(createFolderItem);
+
             var deleteFileItem = new ToolStripMenuItem("Delete File");
             deleteFileItem.Click += async (s, e) => await DeleteFile_Click(s, e);
             contextMenu.Items.Add(deleteFileItem);
@@ -99,7 +203,32 @@ namespace QACORDMS.Client
             return contextMenu;
         }
 
-        // Create File logic (similar to UploadFileMenuItem_Click)
+        private async Task CreateFolder_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
+            {
+                MessageBox.Show("Please select a project first.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                string folderName = Prompt.ShowDialog("Enter folder name:", "New Folder");
+                if (!string.IsNullOrEmpty(folderName))
+                {
+                    statusLabel.Text = $"Creating folder: {folderName}...";
+                    string folderId = await _apiHelper.CreateFolderAsync(folderName, CurrentFolderId ?? _selectedProject.GoogleDriveFolderId);
+                    statusLabel.Text = $"Folder '{folderName}' created.";
+                    MessageBox.Show($"Folder '{folderName}' created successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    await LoadFolderContents(CurrentFolderId ?? _selectedProject.GoogleDriveFolderId);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to create folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                statusLabel.Text = "Error creating folder.";
+            }
+        }
         private async Task CreateFile_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
@@ -135,7 +264,6 @@ namespace QACORDMS.Client
             }
         }
 
-        // Delete File logic
         private async Task DeleteFile_Click(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count == 0)
@@ -158,7 +286,7 @@ namespace QACORDMS.Client
             try
             {
                 statusLabel.Text = $"Deleting {selectedItem.Text}...";
-                //await _apiHelper.DeleteFileAsync(driveItem.Id); // Assuming this method exists or will be added
+                // await _apiHelper.DeleteFileAsync(driveItem.Id); // Assuming this method exists
                 statusLabel.Text = "File deleted successfully.";
                 await RefreshFileList();
             }
@@ -169,12 +297,59 @@ namespace QACORDMS.Client
             }
         }
 
+        private async Task LoadFolderContents(string folderId)
+        {
+            try
+            {
+                var driveItems = await _apiHelper.GetGoogleDriveFilesAsync(folderId);
+                listView1.Items.Clear();
+
+                foreach (var item in driveItems)
+                {
+                    var listViewItem = new ListViewItem(item.Name)
+                    {
+                        Tag = item
+                    };
+                    listViewItem.SubItems.Add(item.MimeType ?? "Unknown");
+                    listViewItem.SubItems.Add(item.Size != 0 ? item.Size.ToString() : "N/A");
+                    listView1.Items.Add(listViewItem);
+                }
+
+                statusLabel.Text = $"Loaded {driveItems.Count} items.";
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to load folder contents: {ex.Message}");
+            }
+        }
+
+        private async void BackMenuItem_Click(object sender, EventArgs e)
+        {
+            if (FolderHistory.Count > 0)
+            {
+                try
+                {
+                    CurrentFolderId = FolderHistory.Pop();
+                    await LoadFolderContents(CurrentFolderId);
+                    statusLabel.Text = "Navigated back.";
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to go back: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    statusLabel.Text = "Error navigating back.";
+                }
+            }
+            else
+            {
+                MessageBox.Show("No previous folder to go back to.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
 
         private async void ListView1_DoubleClick(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count == 0 || isProcessingDoubleClick) return;
 
-            isProcessingDoubleClick = true; // Lock the method
+            isProcessingDoubleClick = true;
             var selectedItem = listView1.SelectedItems[0];
             var driveItem = selectedItem.Tag as GoogleDriveItem;
 
@@ -184,63 +359,78 @@ namespace QACORDMS.Client
                 return;
             }
 
-            string fileName = selectedItem.Text;
-            string tempFilePath = Path.Combine(tempFolderPath, fileName);
-
-            try
+            if (driveItem.MimeType == "application/vnd.google-apps.folder")
             {
-                // Check if process is already running
-                if (openedFiles.TryGetValue(tempFilePath, out var existingProcess) && !existingProcess.HasExited)
+                try
                 {
-                    statusLabel.Text = $"{fileName} is already open.";
+                    FolderHistory.Push(CurrentFolderId);
+                    CurrentFolderId = driveItem.Id;
+                    await LoadFolderContents(CurrentFolderId);
+                    statusLabel.Text = $"Navigated to folder: {driveItem.Name}";
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to load folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    statusLabel.Text = "Error navigating to folder.";
+                }
+                finally
+                {
                     isProcessingDoubleClick = false;
-                    return;
                 }
+            }
+            else
+            {
+                string fileName = selectedItem.Text;
+                string tempFilePath = Path.Combine(tempFolderPath, fileName);
 
-                if (!File.Exists(tempFilePath))
+                try
                 {
-                    statusLabel.Text = $"Downloading {fileName}...";
-                    using (var stream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
+                    if (openedFiles.TryGetValue(tempFilePath, out var existingProcess) && !existingProcess.HasExited)
                     {
-                        await _apiHelper.DownloadFileAsync(driveItem.Id, stream);
+                        statusLabel.Text = $"{fileName} is already open.";
+                        isProcessingDoubleClick = false;
+                        return;
                     }
-                    statusLabel.Text = $"Download completed for {fileName}.";
+
+                    if (!File.Exists(tempFilePath))
+                    {
+                        statusLabel.Text = $"Downloading {fileName}...";
+                        using (var stream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
+                        {
+                            await _apiHelper.DownloadFileAsync(driveItem.Id, stream);
+                        }
+                        statusLabel.Text = $"Download completed for {fileName}.";
+                    }
+                    else
+                    {
+                        statusLabel.Text = $"Opening existing {fileName}...";
+                    }
+
+                    statusLabel.Text = $"Opening {fileName}...";
+                    var processInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = tempFilePath,
+                        UseShellExecute = true,
+                        Verb = "open"
+                    };
+
+                    var process = System.Diagnostics.Process.Start(processInfo);
+                    if (process == null)
+                        throw new Exception("Failed to open the file.");
+
+                    openedFiles[tempFilePath] = process;
+                    Task.Run(() => MonitorAndReplaceFileOnClose(tempFilePath, driveItem.Id, fileName, process));
                 }
-                else
+                catch (Exception ex)
                 {
-                    statusLabel.Text = $"Opening existing {fileName}...";
+                    statusLabel.Text = $"Error processing {fileName}.";
                 }
-
-                // Open file
-                statusLabel.Text = $"Opening {fileName}...";
-                var processInfo = new System.Diagnostics.ProcessStartInfo
+                finally
                 {
-                    FileName = tempFilePath,
-                    UseShellExecute = true,
-                    Verb = "open"
-                };
-
-                var process = System.Diagnostics.Process.Start(processInfo);
-                if (process == null)
-                    throw new Exception("Failed to open the file.");
-
-                // Track opened file process
-                openedFiles[tempFilePath] = process;
-
-                // Monitor file changes
-                Task.Run(() => MonitorAndReplaceFileOnClose(tempFilePath, driveItem.Id, fileName, process));
-            }
-            catch (Exception ex)
-            {
-                //MessageBox.Show($"Failed to process file {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                statusLabel.Text = $"Error processing {fileName}.";
-            }
-            finally
-            {
-                isProcessingDoubleClick = false; // Unlock after completion
+                    isProcessingDoubleClick = false;
+                }
             }
         }
-
         // Dictionary to track opened files
         private Dictionary<string, System.Diagnostics.Process> openedFiles = new Dictionary<string, System.Diagnostics.Process>();
 
@@ -248,7 +438,6 @@ namespace QACORDMS.Client
         {
             try
             {
-                // File changes tracking
                 bool fileChanged = false;
                 var fileChangedTcs = new TaskCompletionSource<bool>();
 
@@ -263,12 +452,9 @@ namespace QACORDMS.Client
                     watcher.EnableRaisingEvents = true;
 
                     statusLabel.Text = $"Monitoring changes in {fileName}...";
-
-                    // Wait for process to exit
                     await Task.Run(() => process.WaitForExit());
                 }
 
-                // If file was modified before closing, update it
                 if (fileChanged)
                 {
                     statusLabel.Text = $"Detected changes in {fileName}, updating...";
@@ -283,7 +469,6 @@ namespace QACORDMS.Client
             }
             catch (Exception ex)
             {
-                //MessageBox.Show($"Failed to update {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 statusLabel.Text = $"Error updating {fileName}.";
             }
             finally
@@ -321,153 +506,6 @@ namespace QACORDMS.Client
             throw new IOException($"File {filePath} remained locked after {maxRetries} attempts.");
         }
 
-        #region Working
-        //private async void ListView1_DoubleClick(object sender, EventArgs e)
-        //{
-        //    if (listView1.SelectedItems.Count == 0) return;
-
-        //    var selectedItem = listView1.SelectedItems[0];
-        //    var driveItem = selectedItem.Tag as GoogleDriveItem; // Assuming GoogleDriveItem has Id, Name, etc.
-        //    if (driveItem == null || string.IsNullOrEmpty(driveItem.Id)) return;
-
-        //    string fileName = selectedItem.Text; // Use displayed name
-        //    string tempFilePath = Path.Combine(tempFolderPath, fileName);
-
-        //    try
-        //    {
-        //        // Check if file already exists in temp folder
-        //        if (File.Exists(tempFilePath))
-        //        {
-        //            statusLabel.Text = $"Opening existing {fileName}...";
-        //        }
-        //        else
-        //        {
-        //            statusLabel.Text = $"Downloading {fileName}...";
-
-        //            // Download file from Google Drive
-        //            using (var stream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
-        //            {
-        //                await _apiHelper.DownloadFileAsync(driveItem.Id, stream);
-        //            }
-
-        //            statusLabel.Text = $"Download completed for {fileName}.";
-        //        }
-
-        //        // Open file only after ensuring it's fully downloaded or exists
-        //        statusLabel.Text = $"Opening {fileName}...";
-        //        var processInfo = new System.Diagnostics.ProcessStartInfo
-        //        {
-        //            FileName = tempFilePath,
-        //            UseShellExecute = true,
-        //            Verb = "open"
-        //        };
-
-        //        var process = System.Diagnostics.Process.Start(processInfo);
-        //        if (process == null)
-        //            throw new Exception("Failed to open the file.");
-
-        //        // Monitor changes on the file
-        //        Task.Run(() => MonitorAndUpdateFile(tempFilePath, driveItem.Id, fileName, process));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Failed to process file {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        statusLabel.Text = $"Error processing {fileName}.";
-        //    }
-        //}
-
-        //private async Task MonitorAndUpdateFile(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
-        //{
-        //    try
-        //    {
-        //        // Wait for the process to exit (file closed by user)
-        //        await Task.Run(() => process.WaitForExit());
-
-        //        FileSystemWatcher watcher = new FileSystemWatcher
-        //        {
-        //            Path = tempFolderPath,
-        //            Filter = fileName,
-        //            NotifyFilter = NotifyFilters.LastWrite,
-        //            EnableRaisingEvents = true
-        //        };
-
-        //        bool fileChanged = false;
-        //        var tcs = new TaskCompletionSource<bool>();
-
-        //        watcher.Changed += (s, e) =>
-        //        {
-        //            if (fileChanged) return;
-        //            fileChanged = true;
-        //            tcs.SetResult(true);
-        //        };
-
-        //        statusLabel.Text = $"Monitoring changes in {fileName}...";
-
-        //        // Wait for changes or timeout (e.g., 5 minutes)
-        //        await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromMinutes(5)));
-
-        //        if (fileChanged)
-        //        {
-        //            statusLabel.Text = $"Detected changes in {fileName}, updating...";
-        //            await WaitForFileRelease(filePath); // Ensure file is released
-
-        //            // Replace file on Google Drive
-        //            await _apiHelper.ReplaceFileAsync(fileId, filePath);
-
-        //            statusLabel.Text = $"{fileName} updated successfully.";
-        //        }
-        //        else
-        //        {
-        //            statusLabel.Text = $"No changes detected in {fileName}.";
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Failed to update {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        statusLabel.Text = $"Error updating {fileName}.";
-        //    }
-        //    finally
-        //    {
-        //        try
-        //        {
-        //            if (File.Exists(filePath))
-        //            {
-        //                await WaitForFileRelease(filePath);
-        //                File.Delete(filePath);
-        //                statusLabel.Text = $"{fileName} processed and temp file removed.";
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            MessageBox.Show($"Failed to delete temp file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        }
-        //    }
-        //}
-
-        //private async Task WaitForFileRelease(string filePath)
-        //{
-        //    int maxRetries = 10;
-        //    int delayMs = 1000;
-
-        //    for (int i = 0; i < maxRetries; i++)
-        //    {
-        //        try
-        //        {
-        //            using (var stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-        //            {
-        //                return;
-        //            }
-        //        }
-        //        catch (IOException)
-        //        {
-        //            await Task.Delay(delayMs);
-        //        }
-        //    }
-
-        //    throw new IOException($"File {filePath} remained locked after {maxRetries} attempts.");
-        //} 
-        #endregion
-
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
@@ -494,6 +532,7 @@ namespace QACORDMS.Client
                 ClientListBox.Items.Clear();
                 ClientListBox.Items.AddRange(_clients.Select(x => x.Name).ToArray());
                 statusLabel.Text = "Clients loaded successfully.";
+                ClientListBox.Focus();
             }
             catch (Exception ex)
             {
@@ -582,68 +621,6 @@ namespace QACORDMS.Client
                 statusLabel.Text = "Error loading files.";
             }
         }
-
-        //private async void ProjectListView_MouseDoubleClick(object sender, MouseEventArgs e)
-        //{
-        //    int index = ProjectListView.IndexFromPoint(e.Location);
-        //    if (index == ListBox.NoMatches) return;
-
-        //    try
-        //    {
-        //        var selectedProjectName = ProjectListView.Items[index].ToString();
-        //        _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
-
-        //        if (_selectedProject != null && !string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
-        //        {
-        //            statusLabel.Text = $"Loading files for {_selectedProject.ProjectName}...";
-        //            var driveItems = await _apiHelper.GetGoogleDriveFilesAsync(_selectedProject.GoogleDriveFolderId);
-        //            listView1.Items.Clear();
-
-        //            foreach (var item in driveItems)
-        //            {
-        //                if (!string.IsNullOrEmpty(item.ThumbnailLink))
-        //                {
-        //                    try
-        //                    {
-        //                        using (var client = new HttpClient())
-        //                        {
-        //                            var imageData = await client.GetByteArrayAsync(item.ThumbnailLink);
-        //                            using (var ms = new MemoryStream(imageData))
-        //                            {
-        //                                var thumbnail = Image.FromStream(ms);
-        //                                imageList1.Images.Add(item.Id, thumbnail);
-        //                            }
-        //                        }
-        //                    }
-        //                    catch (Exception ex)
-        //                    {
-        //                        Console.WriteLine($"Failed to load thumbnail for {item.Name}: {ex.Message}");
-        //                    }
-        //                }
-
-        //                var listViewItem = new ListViewItem(item.Name)
-        //                {
-        //                    ImageIndex = imageList1.Images.IndexOfKey(item.Id),
-        //                    Tag = item
-        //                };
-        //                listViewItem.SubItems.Add(item.MimeType);
-        //                listViewItem.SubItems.Add(item.Size.ToString());
-        //                listView1.Items.Add(listViewItem);
-        //            }
-
-        //            statusLabel.Text = $"Loaded {driveItems.Count} items from {_selectedProject.ProjectName}.";
-        //        }
-        //        else
-        //        {
-        //            MessageBox.Show("Invalid project or missing Google Drive folder ID.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Failed to load Google Drive items: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        statusLabel.Text = "Error loading files.";
-        //    }
-        //}
 
         private async void UploadFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -764,7 +741,7 @@ namespace QACORDMS.Client
                     {
                         var listViewItem = new ListViewItem(item.Name)
                         {
-                            Tag = item // Store full GoogleDriveItem object
+                            Tag = item
                         };
                         listViewItem.SubItems.Add(item.MimeType ?? "Unknown");
                         listViewItem.SubItems.Add(item.Size != 0 ? item.Size.ToString() : "N/A");
@@ -849,9 +826,89 @@ namespace QACORDMS.Client
         private void ProjectListView_SelectedIndexChanged(object sender, EventArgs e) { }
         private void listView1_MouseClick(object sender, MouseEventArgs e) { }
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e) { }
+        private async void ClientListBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            int currentIndex = ClientListBox.SelectedIndex;
+            if (e.KeyCode == Keys.Up && currentIndex > 0)
+            {
+                ClientListBox.SelectedIndex = currentIndex - 1;
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Down && currentIndex < ClientListBox.Items.Count - 1)
+            {
+                ClientListBox.SelectedIndex = currentIndex + 1;
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Enter && currentIndex != -1)
+            {
+                try
+                {
+                    var selectedClientName = ClientListBox.SelectedItem.ToString();
+                    _selectedClient = _clients.FirstOrDefault(c => c.Name == selectedClientName);
+
+                    if (_selectedClient != null)
+                    {
+                        statusLabel.Text = $"Loading projects for {_selectedClient.Name}...";
+                        _projects = await _apiHelper.GetClientProjectsAsync(_selectedClient.Id);
+                        ProjectListView.Items.Clear();
+                        ProjectListView.Items.AddRange(_projects.Select(p => p.ProjectName).ToArray());
+                        statusLabel.Text = $"Projects loaded for {_selectedClient.Name}.";
+                        ProjectListView.Focus();
+                        if (ProjectListView.Items.Count > 0)
+                            ProjectListView.SelectedIndex = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to load projects: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    statusLabel.Text = "Error loading projects.";
+                }
+                e.Handled = true;
+            }
+        }
+
+        private async void ProjectListView_KeyDown(object sender, KeyEventArgs e)
+        {
+            int currentIndex = ProjectListView.SelectedIndex;
+            if (e.KeyCode == Keys.Up && currentIndex > 0)
+            {
+                ProjectListView.SelectedIndex = currentIndex - 1;
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Down && currentIndex < ProjectListView.Items.Count - 1)
+            {
+                ProjectListView.SelectedIndex = currentIndex + 1;
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Enter && currentIndex != -1)
+            {
+                try
+                {
+                    var selectedProjectName = ProjectListView.SelectedItem.ToString();
+                    _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
+
+                    if (_selectedProject != null && !string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
+                    {
+                        statusLabel.Text = $"Loading files for {_selectedProject.ProjectName}...";
+                        CurrentFolderId = _selectedProject.GoogleDriveFolderId;
+                        FolderHistory.Clear();
+                        await LoadFolderContents(CurrentFolderId);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Invalid project or missing Google Drive folder ID.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to load Google Drive items: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    statusLabel.Text = "Error loading files.";
+                }
+                e.Handled = true;
+            }
+        }
     }
 
-    // Helper class for simple input dialog (you can replace this with a custom form if needed)
     public static class Prompt
     {
         public static string ShowDialog(string text, string caption, string defaultValue = "")

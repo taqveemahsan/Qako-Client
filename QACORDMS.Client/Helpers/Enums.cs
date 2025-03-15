@@ -17,4 +17,9 @@ namespace QACORDMS.Client.Helpers
         Tax = 1,
         Audit = 2
     }
+    public enum UserRole
+    {
+        Partner = 1,
+        User = 2
+    }
 }

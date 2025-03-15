@@ -89,10 +89,17 @@ namespace QACORDMS.Client.Helpers
             return await _httpClient.DeleteAsync(_BaseUrl + $"client/{id}");
         }
 
+        //public async Task<List<ClientProject>> GetClientProjectsAsync(Guid clientId)
+        //{
+        //    AddAuthorizationHeader();
+        //    return await _httpClient.GetFromJsonAsync<List<ClientProject>>(_BaseUrl + $"client/{clientId}/projects");
+        //}
+
         public async Task<List<ClientProject>> GetClientProjectsAsync(Guid clientId)
         {
-            AddAuthorizationHeader();
-            return await _httpClient.GetFromJsonAsync<List<ClientProject>>(_BaseUrl + $"client/{clientId}/projects");
+            AddAuthorizationHeader(); // Token with role yahan pass hota hai
+            var response = await _httpClient.GetFromJsonAsync<List<ClientProject>>(_BaseUrl + $"Client/{clientId}/projectsbyType");
+            return response ?? new List<ClientProject>();
         }
 
         public async Task<ClientProject> GetClientProjectByIdAsync(int id)
@@ -117,6 +124,40 @@ namespace QACORDMS.Client.Helpers
         {
             AddAuthorizationHeader();
             return await _httpClient.GetFromJsonAsync<List<GoogleDriveItem>>(_BaseUrl + $"DocumentSync/{folderId}/list-items");
+        }
+
+        public async Task<string> CreateFolderAsync(string folderName, string parentFolderId)
+        {
+            AddAuthorizationHeader();
+
+            using (var content = new MultipartFormDataContent())
+            {
+                content.Add(new StringContent(folderName), "folderName");
+                content.Add(new StringContent(parentFolderId), "parentFolderId");
+
+                // Debugging: Log the request
+                Console.WriteLine($"Sending request to {_BaseUrl}DocumentSync/create-folder");
+                Console.WriteLine($"FolderName: {folderName}, ParentFolderId: {parentFolderId}");
+
+                var response = await _httpClient.PostAsync(_BaseUrl + "DocumentSync/create-folder", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Failed to create folder: {response.StatusCode} - {errorContent}");
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<FolderCreationResponse>();
+                if (result == null || string.IsNullOrEmpty(result.FolderId))
+                    throw new Exception("Invalid response from server: Folder ID not found.");
+
+                return result.FolderId;
+            }
+        }
+
+        public class FolderCreationResponse
+        {
+            public string FolderId { get; set; }
         }
 
         public async Task DownloadFileAsync(string fileId, Stream outputStream)
@@ -180,6 +221,77 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
+        public async Task<List<User>> GetUsersAsync()
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<List<User>>(_BaseUrl + "Auth/users");
+                return response ?? new List<User>();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to fetch users: {ex.Message}");
+            }
+        }
+
+        public async Task<bool> CreateUserAsync(Client user)
+        {
+            AddAuthorizationHeader();
+            var response = await _httpClient.PostAsJsonAsync(_BaseUrl + "Client/register", user);
+            response.EnsureSuccessStatusCode();
+            return true;
+        }
+
+        public async Task<bool> DeleteUserAsync(Guid userId)
+        {
+            AddAuthorizationHeader();
+            var response = await _httpClient.DeleteAsync(_BaseUrl + $"Client/delete//{userId}");
+            response.EnsureSuccessStatusCode();
+            return true;
+        }
+
+        public async Task<bool> RegisterUserAsync(User user)
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(_BaseUrl + "Auth/register", user);
+                response.EnsureSuccessStatusCode();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false; // Ya exception throw karo agar detailed error chahiye
+            }
+        }
+        public async Task<List<UserProjectPermissionDto>> GetPermissionsByProjectIdAsync(Guid projectId)
+        {
+            AddAuthorizationHeader();
+            var response = await _httpClient.GetFromJsonAsync<List<UserProjectPermissionDto>>(_BaseUrl + $"Client/project/{projectId}/permissions");
+            return response ?? new List<UserProjectPermissionDto>();
+        }
+
+        public async Task<bool> AddProjectPermissionAsync(UserProjectPermissionDto permission)
+        {
+            AddAuthorizationHeader();
+            var response = await _httpClient.PostAsJsonAsync(_BaseUrl + "Client/project/permission/add", permission);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> EditProjectPermissionAsync(Guid permissionId, UserProjectPermissionDto permission)
+        {
+            AddAuthorizationHeader();
+            var response = await _httpClient.PutAsJsonAsync(_BaseUrl + $"Client/project/permission/edit/{permissionId}", permission);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> DeleteProjectPermissionAsync(Guid permissionId)
+        {
+            AddAuthorizationHeader();
+            var response = await _httpClient.DeleteAsync(_BaseUrl + $"Client/project/permission/delete/{permissionId}");
+            return response.IsSuccessStatusCode;
+        }
         public class UploadResponse
         {
             public string FileId { get; set; }

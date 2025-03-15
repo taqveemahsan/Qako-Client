@@ -9,6 +9,7 @@
         private ToolStripStatusLabel statusLabel;
         private ContextMenuStrip clientContextMenu; // New for ClientListBox
         private ContextMenuStrip projectContextMenu; // New for ProjectListView
+        private ToolStripMenuItem backMenuItem;
 
         private void InitializeComponent()
         {
@@ -195,6 +196,15 @@
             statusLabel.Name = "statusLabel";
             statusLabel.Size = new Size(73, 34);
             statusLabel.Text = "Ready";
+            //
+            //Backmenu
+            //
+            backMenuItem = new ToolStripMenuItem();
+            backMenuItem.Name = "backMenuItem";
+            backMenuItem.Size = new Size(109, 36);
+            backMenuItem.Text = "Back";
+            backMenuItem.Click += BackMenuItem_Click;
+            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, uploadFileMenuItem, backMenuItem });
             // 
             // MainForm
             // 
