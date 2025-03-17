@@ -34,10 +34,14 @@ namespace QACORDMS.Client.Helpers
         public string Id { get; set; }
         public string Name { get; set; }
         public string MimeType { get; set; }
-        public long Size { get; set; }
+        public long? Size { get; set; }
+        public long SizeInKb => (long)(Size == null || Size == 0 ? 0 : Size / 1024);
         public string ParentId { get; set; }
         public string ThumbnailLink { get; set; }
+        public string IconLink { get; set; }
+        public string FileExtension { get; set; }
         
+
     }
 
     public class APIUserModel

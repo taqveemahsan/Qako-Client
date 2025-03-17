@@ -1,3 +1,4 @@
+using Microsoft.VisualBasic.ApplicationServices;
 using QACORDMS.Client.Helpers;
 
 namespace QACORDMS.Client
@@ -64,7 +65,7 @@ namespace QACORDMS.Client
             }
             else
             {
-                addUserMenuItem.Visible = false; 
+                addUserMenuItem.Visible = false;
             }
         }
 
@@ -77,7 +78,7 @@ namespace QACORDMS.Client
                 {
                     ProjectListView.SelectedIndex = index;
                     var selectedProjectName = ProjectListView.Items[index].ToString();
-                    
+
                     _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
 
                     if (_selectedProject != null && _selectedProject.Id != Guid.Empty)
@@ -109,9 +110,9 @@ namespace QACORDMS.Client
             if (e.Button == MouseButtons.Right && _userRole == "Partner")
             {
                 int index = ProjectListView.IndexFromPoint(e.Location);
-                if (index != ListBox.NoMatches) 
+                if (index != ListBox.NoMatches)
                 {
-                    ProjectListView.SelectedIndex = index; 
+                    ProjectListView.SelectedIndex = index;
                     var selectedProjectName = ProjectListView.Items[index].ToString();
                     _selectedProject = _projects.FirstOrDefault(p => p.ProjectName == selectedProjectName);
 
@@ -125,7 +126,7 @@ namespace QACORDMS.Client
                             permissionForm.ShowDialog();
                         };
                         contextMenu.Items.Add(addPermissionItem);
-                        contextMenu.Show(ProjectListView, e.Location); 
+                        contextMenu.Show(ProjectListView, e.Location);
                     }
                 }
             }
@@ -169,7 +170,7 @@ namespace QACORDMS.Client
                 foreach (string filePath in files)
                 {
                     statusLabel.Text = $"Uploading: {Path.GetFileName(filePath)}...";
-                    string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, _selectedProject.GoogleDriveFolderId);
+                    string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, CurrentFolderId);
                     statusLabel.Text = $"Uploaded: {Path.GetFileName(filePath)}";
                 }
 
@@ -247,7 +248,7 @@ namespace QACORDMS.Client
                         string filePath = openFileDialog.FileName;
                         statusLabel.Text = $"Uploading: {Path.GetFileName(filePath)}...";
 
-                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, _selectedProject.GoogleDriveFolderId);
+                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, CurrentFolderId);
 
                         MessageBox.Show($"File '{Path.GetFileName(filePath)}' uploaded successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         statusLabel.Text = "Upload complete.";
@@ -304,12 +305,35 @@ namespace QACORDMS.Client
 
                 foreach (var item in driveItems)
                 {
+
+                    if (!string.IsNullOrEmpty(item.ThumbnailLink) && imageList1.Images.ContainsKey(item!.MimeType ?? "Unknown") == false)
+                    {
+                        try
+                        {
+                            using (var client = new HttpClient())
+                            {
+                                var imageData = client.GetByteArrayAsync(item.ThumbnailLink).Result;
+                                using (var ms = new MemoryStream(imageData))
+                                {
+                                    var thumbnail = Image.FromStream(ms);
+                                    imageList1.Images.Add(item.MimeType ?? "Unknown", thumbnail);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to load thumbnail for {item.Name}: {ex.Message}");
+                        }
+                    }
+
                     var listViewItem = new ListViewItem(item.Name)
                     {
+                        ImageKey = item.MimeType,
+                        ImageIndex = imageList1.Images.IndexOfKey(item.MimeType ?? "Unknown"),// Assign the image using the item's unique ID
                         Tag = item
                     };
-                    listViewItem.SubItems.Add(item.MimeType ?? "Unknown");
-                    listViewItem.SubItems.Add(item.Size != 0 ? item.Size.ToString() : "N/A");
+                    listViewItem.SubItems.Add(item.FileExtension ?? "folder");
+                    listViewItem.SubItems.Add(item.Size + " kb");
                     listView1.Items.Add(listViewItem);
                 }
 
@@ -592,26 +616,39 @@ namespace QACORDMS.Client
                 if (_selectedProject != null && !string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
                 {
                     statusLabel.Text = $"Loading files for {_selectedProject.ProjectName}...";
-                    var driveItems = await _apiHelper.GetGoogleDriveFilesAsync(_selectedProject.GoogleDriveFolderId);
-                    listView1.Items.Clear();
-
-                    foreach (var item in driveItems)
-                    {
-                        var listViewItem = new ListViewItem(item.Name)
-                        {
-                            Tag = item // Store full GoogleDriveItem object
-                        };
-                        listViewItem.SubItems.Add(item.MimeType ?? "Unknown");
-                        listViewItem.SubItems.Add(item.Size != 0 ? item.Size.ToString() : "N/A");
-                        listView1.Items.Add(listViewItem);
-                    }
-
-                    statusLabel.Text = $"Loaded {driveItems.Count} items from {_selectedProject.ProjectName}.";
+                    CurrentFolderId = _selectedProject.GoogleDriveFolderId;
+                    FolderHistory.Clear();
+                    await LoadFolderContents(CurrentFolderId);
                 }
                 else
                 {
                     MessageBox.Show("Invalid project or missing Google Drive folder ID.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
+
+
+                //if (_selectedProject != null && !string.IsNullOrEmpty(_selectedProject.GoogleDriveFolderId))
+                //{
+                //    statusLabel.Text = $"Loading files for {_selectedProject.ProjectName}...";
+                //    var driveItems = await _apiHelper.GetGoogleDriveFilesAsync(_selectedProject.GoogleDriveFolderId);
+                //    listView1.Items.Clear();
+
+                //    foreach (var item in driveItems)
+                //    {
+                //        var listViewItem = new ListViewItem(item.Name)
+                //        {
+                //            Tag = item // Store full GoogleDriveItem object
+                //        };
+                //        listViewItem.SubItems.Add(item.MimeType ?? "Unknown");
+                //        listViewItem.SubItems.Add(item.Size != 0 ? item.Size.ToString() : "N/A");
+                //        listView1.Items.Add(listViewItem);
+                //    }
+
+                //    statusLabel.Text = $"Loaded {driveItems.Count} items from {_selectedProject.ProjectName}.";
+                //}
+                //else
+                //{
+                //    MessageBox.Show("Invalid project or missing Google Drive folder ID.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //}
             }
             catch (Exception ex)
             {
@@ -641,7 +678,7 @@ namespace QACORDMS.Client
                         statusLabel.Text = $"Uploading: {Path.GetFileName(filePath)}...";
 
                         // Upload file to Google Drive
-                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, _selectedProject.GoogleDriveFolderId);
+                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, CurrentFolderId);
 
                         MessageBox.Show($"File '{Path.GetFileName(filePath)}' uploaded successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         statusLabel.Text = "Upload complete.";
@@ -707,7 +744,7 @@ namespace QACORDMS.Client
                         statusLabel.Text = $"Adding file: {Path.GetFileName(filePath)}...";
 
                         // Upload file to Google Drive
-                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, _selectedProject.GoogleDriveFolderId);
+                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, CurrentFolderId);
 
                         MessageBox.Show($"File '{Path.GetFileName(filePath)}' added.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         statusLabel.Text = "File added successfully.";
@@ -806,7 +843,7 @@ namespace QACORDMS.Client
                 {
                     statusLabel.Text = $"Deleting '{selectedItem.Text}'...";
                     // Assuming _apiHelper has a DeleteFileAsync method
-                    // await _apiHelper.DeleteFileAsync(driveItem.Id);
+                    //await _apiHelper.DeleteFileAsync(driveItem.Id);
                     listView1.Items.Remove(selectedItem);
                     MessageBox.Show($"Item '{selectedItem.Text}' deleted.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     statusLabel.Text = "Item deleted.";
@@ -904,6 +941,15 @@ namespace QACORDMS.Client
                 }
                 e.Handled = true;
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            SessionHelper.CurrentUser = null;
+            var loginForm = new Login();
+            loginForm.Show();
+            this.Close();
+
         }
     }
 

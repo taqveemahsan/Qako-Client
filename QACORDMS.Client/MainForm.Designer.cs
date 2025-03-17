@@ -17,6 +17,7 @@
             menuStrip = new MenuStrip();
             refreshMenuItem = new ToolStripMenuItem();
             uploadFileMenuItem = new ToolStripMenuItem();
+            backMenuItem = new ToolStripMenuItem();
             splitContainer = new SplitContainer();
             ClientListBox = new ListBox();
             clientContextMenu = new ContextMenuStrip(components);
@@ -28,6 +29,7 @@
             imageList1 = new ImageList(components);
             statusStrip = new StatusStrip();
             statusLabel = new ToolStripStatusLabel();
+            button1 = new Button();
             menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
             splitContainer.Panel1.SuspendLayout();
@@ -45,26 +47,33 @@
             menuStrip.BackColor = Color.FromArgb(240, 248, 255);
             menuStrip.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             menuStrip.ImageScalingSize = new Size(28, 28);
-            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, uploadFileMenuItem });
+            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, uploadFileMenuItem, backMenuItem });
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
-            menuStrip.Size = new Size(1000, 40);
+            menuStrip.Size = new Size(1000, 27);
             menuStrip.TabIndex = 0;
             menuStrip.ItemClicked += menuStrip_ItemClicked;
             // 
             // refreshMenuItem
             // 
             refreshMenuItem.Name = "refreshMenuItem";
-            refreshMenuItem.Size = new Size(109, 36);
+            refreshMenuItem.Size = new Size(65, 23);
             refreshMenuItem.Text = "Clients";
             refreshMenuItem.Click += refreshMenuItem_Click;
             // 
             // uploadFileMenuItem
             // 
             uploadFileMenuItem.Name = "uploadFileMenuItem";
-            uploadFileMenuItem.Size = new Size(160, 36);
+            uploadFileMenuItem.Size = new Size(97, 23);
             uploadFileMenuItem.Text = "Upload File";
             uploadFileMenuItem.Click += UploadFileMenuItem_Click;
+            // 
+            // backMenuItem
+            // 
+            backMenuItem.Name = "backMenuItem";
+            backMenuItem.Size = new Size(53, 23);
+            backMenuItem.Text = "Back";
+            backMenuItem.Click += BackMenuItem_Click;
             // 
             // splitContainer
             // 
@@ -91,7 +100,7 @@
             ClientListBox.ContextMenuStrip = clientContextMenu;
             ClientListBox.Font = new Font("Segoe UI", 11F);
             ClientListBox.FormattingEnabled = true;
-            ClientListBox.ItemHeight = 36;
+            ClientListBox.ItemHeight = 20;
             ClientListBox.Location = new Point(10, 10);
             ClientListBox.Name = "ClientListBox";
             ClientListBox.Size = new Size(180, 542);
@@ -131,7 +140,7 @@
             ProjectListView.ContextMenuStrip = projectContextMenu;
             ProjectListView.Font = new Font("Segoe UI", 11F);
             ProjectListView.FormattingEnabled = true;
-            ProjectListView.ItemHeight = 36;
+            ProjectListView.ItemHeight = 20;
             ProjectListView.Location = new Point(10, 10);
             ProjectListView.Name = "ProjectListView";
             ProjectListView.Size = new Size(230, 542);
@@ -185,31 +194,33 @@
             statusStrip.Font = new Font("Segoe UI", 9F);
             statusStrip.ImageScalingSize = new Size(28, 28);
             statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel });
-            statusStrip.Location = new Point(0, 597);
+            statusStrip.Location = new Point(0, 616);
             statusStrip.Name = "statusStrip";
-            statusStrip.Size = new Size(1000, 43);
+            statusStrip.Size = new Size(1000, 24);
             statusStrip.TabIndex = 2;
             // 
             // statusLabel
             // 
             statusLabel.BorderSides = ToolStripStatusLabelBorderSides.Left;
             statusLabel.Name = "statusLabel";
-            statusLabel.Size = new Size(73, 34);
+            statusLabel.Size = new Size(43, 19);
             statusLabel.Text = "Ready";
-            //
-            //Backmenu
-            //
-            backMenuItem = new ToolStripMenuItem();
-            backMenuItem.Name = "backMenuItem";
-            backMenuItem.Size = new Size(109, 36);
-            backMenuItem.Text = "Back";
-            backMenuItem.Click += BackMenuItem_Click;
-            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, uploadFileMenuItem, backMenuItem });
+            // 
+            // button1
+            // 
+            button1.Location = new Point(913, 12);
+            button1.Name = "button1";
+            button1.Size = new Size(75, 23);
+            button1.TabIndex = 3;
+            button1.Text = "Logout";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // MainForm
             // 
             BackColor = Color.FromArgb(245, 245, 245);
             ClientSize = new Size(1000, 640);
+            Controls.Add(button1);
             Controls.Add(menuStrip);
             Controls.Add(splitContainer);
             Controls.Add(statusStrip);
@@ -242,6 +253,7 @@
         private ContextMenuStrip NewFolder;
         private System.ComponentModel.IContainer components;
         private ImageList imageList1;
+        private Button button1;
     }
 }
 

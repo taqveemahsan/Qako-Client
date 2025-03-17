@@ -8,6 +8,6 @@ namespace QACORDMS.Client.Helpers
 {
     public static class SessionHelper
     {
-        public static APIUserModel CurrentUser { get; set; }
+        public static APIUserModel? CurrentUser { get; set; }
     }
 }
