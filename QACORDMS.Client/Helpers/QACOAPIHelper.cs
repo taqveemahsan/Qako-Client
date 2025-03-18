@@ -251,6 +251,33 @@ namespace QACORDMS.Client.Helpers
             return true;
         }
 
+        public async Task<UserResponse> GetUsersAsync(string search = "", int pageNumber = 1, int pageSize = 10)
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<UserResponse>(_BaseUrl + $"Auth/users?search={Uri.EscapeDataString(search)}&pageNumber={pageNumber}&pageSize={pageSize}");
+                return response ?? new UserResponse();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to fetch users: {ex.Message}");
+            }
+        }
+        public async Task<UserResponse> GetRoleUsersAsync(string search = "", int pageNumber = 1, int pageSize = 10)
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<UserResponse>(_BaseUrl + $"Auth/users?search={Uri.EscapeDataString(search)}&pageNumber={pageNumber}&pageSize={pageSize}&role=User");
+                return response ?? new UserResponse();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to fetch users: {ex.Message}");
+            }
+        }
+
         public async Task<bool> RegisterUserAsync(User user)
         {
             AddAuthorizationHeader();
