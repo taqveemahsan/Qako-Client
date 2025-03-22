@@ -1,12 +1,13 @@
 ﻿using QACORDMS.Client.Helpers;
 using System;
-using System.Windows.Forms; // Yeh ensure karo ki hai
+using System.Windows.Forms;
 
 namespace QACORDMS.Client
 {
     public partial class Login : Form
     {
         private readonly QACOAPIHelper _apiHelper;
+        private bool isPasswordVisible = false;
 
         public Login()
         {
@@ -48,7 +49,22 @@ namespace QACORDMS.Client
 
         private void Login_Load(object sender, EventArgs e)
         {
-            lblTitle.Left = (panelContainer.Width - lblTitle.Width) / 2;
+            pictureBoxLogo.Left = (panelContainer.Width - pictureBoxLogo.Width) / 2;
+        }
+
+        private void btnTogglePassword_Click(object sender, EventArgs e)
+        {
+            isPasswordVisible = !isPasswordVisible;
+            if (isPasswordVisible)
+            {
+                txtPassword.PasswordChar = '\0'; // Show password
+                btnTogglePassword.Text = "👁️"; // You can change this to another icon if needed
+            }
+            else
+            {
+                txtPassword.PasswordChar = '*'; // Hide password
+                btnTogglePassword.Text = "👁️"; // You can change this to another icon if needed
+            }
         }
     }
 }

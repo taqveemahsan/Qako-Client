@@ -8,9 +8,8 @@
             menuStrip = new MenuStrip();
             refreshMenuItem = new ToolStripMenuItem();
             uploadFileMenuItem = new ToolStripMenuItem();
-            clientLabel = new Label();
             projectLabel = new Label();
-            clientComboBox = new ComboBox();
+            clientsViewBox = new ListView();
             projectComboBox = new ComboBox();
             listView1 = new ListView();
             NewFolder = new ContextMenuStrip(components);
@@ -39,7 +38,7 @@
             menuStrip.Name = "menuStrip";
             menuStrip.Padding = new Padding(10, 2, 10, 2);
             menuStrip.RenderMode = ToolStripRenderMode.Professional;
-            menuStrip.Size = new Size(1600, 44);
+            menuStrip.Size = new Size(1600, 33);
             menuStrip.TabIndex = 0;
             menuStrip.Text = "menuStrip";
             menuStrip.ItemClicked += menuStrip_ItemClicked;
@@ -47,50 +46,43 @@
             // refreshMenuItem
             // 
             refreshMenuItem.Name = "refreshMenuItem";
-            refreshMenuItem.Size = new Size(114, 40);
+            refreshMenuItem.Size = new Size(85, 29);
             refreshMenuItem.Text = "Clients";
             refreshMenuItem.Click += refreshMenuItem_Click;
             // 
             // uploadFileMenuItem
             // 
             uploadFileMenuItem.Name = "uploadFileMenuItem";
-            uploadFileMenuItem.Size = new Size(170, 40);
+            uploadFileMenuItem.Size = new Size(126, 29);
             uploadFileMenuItem.Text = "Upload File";
             uploadFileMenuItem.Click += UploadFileMenuItem_Click;
-            // 
-            // clientLabel
-            // 
-            clientLabel.AutoSize = true;
-            clientLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            clientLabel.ForeColor = Color.FromArgb(0, 102, 204);
-            clientLabel.Location = new Point(15, 47);
-            clientLabel.Name = "clientLabel";
-            clientLabel.Size = new Size(93, 38);
-            clientLabel.TabIndex = 9;
-            clientLabel.Text = "Client";
             // 
             // projectLabel
             // 
             projectLabel.AutoSize = true;
             projectLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             projectLabel.ForeColor = Color.FromArgb(0, 102, 204);
-            projectLabel.Location = new Point(389, 47);
+            projectLabel.Location = new Point(15, 78);
             projectLabel.Name = "projectLabel";
-            projectLabel.Size = new Size(121, 38);
+            projectLabel.Size = new Size(88, 28);
             projectLabel.TabIndex = 10;
             projectLabel.Text = "Projects";
             // 
-            // clientComboBox
+            // clientsViewBox
             // 
-            clientComboBox.BackColor = Color.FromArgb(245, 245, 245);
-            clientComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            clientComboBox.FlatStyle = FlatStyle.Flat;
-            clientComboBox.Font = new Font("Segoe UI", 12F);
-            clientComboBox.Location = new Point(15, 80);
-            clientComboBox.Name = "clientComboBox";
-            clientComboBox.Size = new Size(358, 46);
-            clientComboBox.TabIndex = 1;
-            clientComboBox.SelectedIndexChanged += ClientComboBox_SelectedIndexChanged;
+            clientsViewBox.BackColor = Color.White;
+            clientsViewBox.Font = new Font("Segoe UI", 11F);
+            clientsViewBox.FullRowSelect = true;
+            clientsViewBox.HeaderStyle = ColumnHeaderStyle.Nonclickable;
+            clientsViewBox.Location = new Point(15, 151);
+            clientsViewBox.MultiSelect = false;
+            clientsViewBox.Name = "clientsViewBox";
+            clientsViewBox.Size = new Size(280, 789);
+            clientsViewBox.TabIndex = 2;
+            clientsViewBox.UseCompatibleStateImageBehavior = false;
+            clientsViewBox.View = View.Details;
+            clientsViewBox.SelectedIndexChanged += ClientsViewBox_SelectedIndexChanged;
+            clientsViewBox.DoubleClick += ClientsViewBox_DoubleClick;
             // 
             // projectComboBox
             // 
@@ -98,28 +90,29 @@
             projectComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             projectComboBox.FlatStyle = FlatStyle.Flat;
             projectComboBox.Font = new Font("Segoe UI", 12F);
-            projectComboBox.Location = new Point(389, 80);
+            projectComboBox.Location = new Point(15, 109);
             projectComboBox.Name = "projectComboBox";
-            projectComboBox.Size = new Size(392, 46);
-            projectComboBox.TabIndex = 2;
+            projectComboBox.Size = new Size(1560, 36);
+            projectComboBox.TabIndex = 1;
             projectComboBox.SelectedIndexChanged += ProjectComboBox_SelectedIndexChanged;
             // 
             // listView1
             // 
+            listView1.Alignment = ListViewAlignment.SnapToGrid;
             listView1.BackColor = Color.White;
+            listView1.BorderStyle = BorderStyle.None;
             listView1.ContextMenuStrip = NewFolder;
-            listView1.Font = new Font("Segoe UI", 11F);
+            listView1.Font = new Font("Segoe UI", 12F);
             listView1.FullRowSelect = true;
-            listView1.GridLines = true;
+            listView1.HeaderStyle = ColumnHeaderStyle.None;
             listView1.LargeImageList = imageList1;
-            listView1.Location = new Point(15, 140);
+            listView1.Location = new Point(305, 151);
             listView1.Name = "listView1";
-            listView1.Size = new Size(1570, 760);
+            listView1.Size = new Size(1270, 789);
             listView1.SmallImageList = imageList1;
             listView1.StateImageList = imageList1;
             listView1.TabIndex = 3;
             listView1.UseCompatibleStateImageBehavior = false;
-            listView1.View = View.Details;
             listView1.DoubleClick += ListView1_DoubleClick;
             listView1.MouseClick += listView1_MouseClick;
             // 
@@ -136,7 +129,7 @@
             // imageList1
             // 
             imageList1.ColorDepth = ColorDepth.Depth32Bit;
-            imageList1.ImageSize = new Size(32, 32);
+            imageList1.ImageSize = new Size(48, 48);
             imageList1.TransparentColor = Color.Transparent;
             // 
             // statusStrip
@@ -146,16 +139,16 @@
             statusStrip.ForeColor = Color.White;
             statusStrip.ImageScalingSize = new Size(24, 24);
             statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel });
-            statusStrip.Location = new Point(0, 955);
+            statusStrip.Location = new Point(0, 969);
             statusStrip.Name = "statusStrip";
             statusStrip.Padding = new Padding(10, 0, 10, 0);
-            statusStrip.Size = new Size(1600, 45);
+            statusStrip.Size = new Size(1600, 31);
             statusStrip.TabIndex = 7;
             // 
             // statusLabel
             // 
             statusLabel.Name = "statusLabel";
-            statusLabel.Size = new Size(85, 36);
+            statusLabel.Size = new Size(62, 25);
             statusLabel.Text = "Ready";
             // 
             // button1
@@ -166,7 +159,7 @@
             button1.FlatStyle = FlatStyle.Flat;
             button1.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             button1.ForeColor = Color.White;
-            button1.Location = new Point(1440, 70);
+            button1.Location = new Point(1435, 44);
             button1.Name = "button1";
             button1.Size = new Size(140, 56);
             button1.TabIndex = 4;
@@ -182,7 +175,7 @@
             backButton.FlatStyle = FlatStyle.Flat;
             backButton.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             backButton.ForeColor = Color.White;
-            backButton.Location = new Point(1280, 70);
+            backButton.Location = new Point(1289, 44);
             backButton.Name = "backButton";
             backButton.Size = new Size(140, 56);
             backButton.TabIndex = 5;
@@ -196,10 +189,10 @@
             viewToolStrip.Dock = DockStyle.Bottom;
             viewToolStrip.ImageScalingSize = new Size(24, 24);
             viewToolStrip.Items.AddRange(new ToolStripItem[] { smallIconsButton, largeIconsButton, detailsButton });
-            viewToolStrip.Location = new Point(0, 919);
+            viewToolStrip.Location = new Point(0, 943);
             viewToolStrip.Name = "viewToolStrip";
             viewToolStrip.RenderMode = ToolStripRenderMode.Professional;
-            viewToolStrip.Size = new Size(1600, 36);
+            viewToolStrip.Size = new Size(1600, 26);
             viewToolStrip.TabIndex = 8;
             // 
             // smallIconsButton
@@ -207,7 +200,7 @@
             smallIconsButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
             smallIconsButton.Margin = new Padding(5, 1, 5, 1);
             smallIconsButton.Name = "smallIconsButton";
-            smallIconsButton.Size = new Size(122, 34);
+            smallIconsButton.Size = new Size(88, 24);
             smallIconsButton.Text = "Small Icons";
             smallIconsButton.Click += smallIconsButton_Click;
             // 
@@ -216,7 +209,7 @@
             largeIconsButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
             largeIconsButton.Margin = new Padding(5, 1, 5, 1);
             largeIconsButton.Name = "largeIconsButton";
-            largeIconsButton.Size = new Size(123, 34);
+            largeIconsButton.Size = new Size(88, 24);
             largeIconsButton.Text = "Large Icons";
             largeIconsButton.Click += largeIconsButton_Click;
             // 
@@ -225,7 +218,7 @@
             detailsButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
             detailsButton.Margin = new Padding(5, 1, 5, 1);
             detailsButton.Name = "detailsButton";
-            detailsButton.Size = new Size(80, 34);
+            detailsButton.Size = new Size(59, 24);
             detailsButton.Text = "Details";
             detailsButton.Click += detailsButton_Click;
             // 
@@ -233,10 +226,9 @@
             // 
             BackColor = Color.FromArgb(173, 216, 230);
             ClientSize = new Size(1600, 1000);
-            Controls.Add(clientLabel);
             Controls.Add(projectLabel);
             Controls.Add(viewToolStrip);
-            Controls.Add(clientComboBox);
+            Controls.Add(clientsViewBox);
             Controls.Add(projectComboBox);
             Controls.Add(listView1);
             Controls.Add(button1);
@@ -258,11 +250,9 @@
             ResumeLayout(false);
             PerformLayout();
         }
-
-        private Label clientLabel;
         private Label projectLabel;
-        private ComboBox clientComboBox;
-        private ComboBox projectComboBox;
+        private ListView clientsViewBox;
+        private ComboBox projectComboBox; // Keeping projectComboBox
         private ListView listView1;
         private ContextMenuStrip NewFolder;
         private System.ComponentModel.IContainer components;
@@ -278,11 +268,17 @@
         private ToolStripButton smallIconsButton;
         private ToolStripButton largeIconsButton;
         private ToolStripButton detailsButton;
+
+        private ContextMenuStrip CreateClientsContextMenu()
+        {
+            var contextMenu = new ContextMenuStrip();
+            var refreshItem = new ToolStripMenuItem("Refresh Clients");
+            refreshItem.Click += (s, e) => LoadClientsAsync();
+            contextMenu.Items.Add(refreshItem);
+            return contextMenu;
+        }
     }
 }
-
-
-
 
 
 //namespace QACORDMS.Client

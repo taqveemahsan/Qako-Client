@@ -10,7 +10,7 @@ namespace QACORDMS.Client.Helpers
 {
     public class QACOAPIHelper
     {
-        private const string _BaseUrl = "https://localhost:7170/api/";
+        private const string _BaseUrl = "https://localhost:44372/api/";
         private readonly HttpClient _httpClient;
 
         public QACOAPIHelper(HttpClient httpClient)
@@ -40,10 +40,18 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        public async Task<List<Client>> GetClientsAsync()
+        //public async Task<List<Client>> GetClientsAsync()
+        //{
+        //    AddAuthorizationHeader();
+        //    return await _httpClient.GetFromJsonAsync<List<Client>>(_BaseUrl + "client/all");
+        //}
+
+        public async Task<PagedClientResponse> GetClientsAsync(string search = "", int page = 1, int pageSize = 10)
         {
             AddAuthorizationHeader();
-            return await _httpClient.GetFromJsonAsync<List<Client>>(_BaseUrl + "client/all");
+            var url = $"{_BaseUrl}client/all?search={Uri.EscapeDataString(search)}&page={page}&pageSize={pageSize}";
+            var response = await _httpClient.GetFromJsonAsync<PagedClientResponse>(url);
+            return response ?? new PagedClientResponse { Clients = new List<Client>(), TotalCount = 0, TotalPages = 0 };
         }
 
         public async Task<Client> GetClientByIdAsync(int id)
@@ -83,10 +91,17 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        public async Task<HttpResponseMessage> DeleteClientAsync(int id)
+        //public async Task<HttpResponseMessage> DeleteClientAsync(int id)
+        //{
+        //    AddAuthorizationHeader();
+        //    return await _httpClient.DeleteAsync(_BaseUrl + $"client/{id}");
+        //}
+
+        public async Task<bool> DeleteClientAsync(Guid id)
         {
             AddAuthorizationHeader();
-            return await _httpClient.DeleteAsync(_BaseUrl + $"client/{id}");
+            var response = await _httpClient.DeleteAsync($"{_BaseUrl}client/{id}");
+            return response.IsSuccessStatusCode;
         }
 
         //public async Task<List<ClientProject>> GetClientProjectsAsync(Guid clientId)

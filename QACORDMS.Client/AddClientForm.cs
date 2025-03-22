@@ -42,5 +42,22 @@ namespace QACORDMS.Client
             MessageBox.Show("Client added successfully!");
             this.Close();
         }
+
+        private void nameTextBox_Paint(object sender, PaintEventArgs e)
+        {
+            ControlPaint.DrawBorder(e.Graphics, nameTextBox.ClientRectangle,
+                Color.FromArgb(200, 200, 200), ButtonBorderStyle.Solid);
+        }
+
+        private void AddRoundedCorners(Control control, int radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            path.AddArc(0, 0, radius, radius, 180, 90);
+            path.AddArc(control.Width - radius, 0, radius, radius, 270, 90);
+            path.AddArc(control.Width - radius, control.Height - radius, radius, radius, 0, 90);
+            path.AddArc(0, control.Height - radius, radius, radius, 90, 90);
+            path.CloseFigure();
+            control.Region = new Region(path);
+        }
     }
 }
