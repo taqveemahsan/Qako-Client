@@ -31,7 +31,8 @@ namespace QACORDMS.Client
             {
                 var response = await _apiHelper.GetRoleUsersAsync(_searchQuery, _currentPage, 50);
                 var allUsers = response.Users;
-                var userRoleUsers = allUsers.Where(u => u.RoleName == "User").ToList();
+                // Updated: Check if "User" role exists in RoleNames list
+                var userRoleUsers = allUsers.Where(u => u.RoleNames != null && u.RoleNames.Contains("User", StringComparer.OrdinalIgnoreCase)).ToList();
                 _existingPermissions = await _apiHelper.GetPermissionsByProjectIdAsync(_projectId);
 
                 _totalUsers = userRoleUsers.Count; // Use filtered count

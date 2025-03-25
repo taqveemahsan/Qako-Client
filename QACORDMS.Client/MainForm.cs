@@ -24,6 +24,7 @@ namespace QACORDMS.Client
         private Stack<string> FolderHistory { get; set; } = new Stack<string>();
         private ToolStripMenuItem addUserMenuItem;
         private Dictionary<string, System.Diagnostics.Process> openedFiles = new Dictionary<string, System.Diagnostics.Process>();
+        private Button addPermissionsButton;
 
         public MainForm(QACOAPIHelper apiHelper, string userRole = null)
         {
@@ -65,6 +66,14 @@ namespace QACORDMS.Client
             else
             {
                 addUserMenuItem.Visible = false;
+            }
+            if (_userRole == "AuditManager" || _userRole == "TaxManager" || _userRole == "Partner")
+            {
+                addPermissionsButton.Visible = true;
+            }
+            else
+            {
+                addPermissionsButton.Visible = false;
             }
         }
 
@@ -695,6 +704,25 @@ namespace QACORDMS.Client
         private void menuStrip_ItemClicked(object sender, ToolStripItemClickedEventArgs e) { }
         private void listView1_MouseClick(object sender, MouseEventArgs e) { }
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e) { }
+
+        private void AddPermissionsButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_selectedProject == null || _selectedProject.Id == Guid.Empty)
+                {
+                    MessageBox.Show("Please select a project first.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var permissionForm = new AddPermissionForm(_apiHelper, _selectedProject.Id);
+                permissionForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open Permissions form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 
     public static class Prompt

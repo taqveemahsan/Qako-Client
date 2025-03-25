@@ -304,6 +304,7 @@ namespace QACORDMS.Client.Helpers
             }
             catch (Exception ex)
             {
+                // Optional: Log the exception if needed
                 return false; // Ya exception throw karo agar detailed error chahiye
             }
         }

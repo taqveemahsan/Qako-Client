@@ -22,6 +22,7 @@
             smallIconsButton = new ToolStripButton();
             largeIconsButton = new ToolStripButton();
             detailsButton = new ToolStripButton();
+            addPermissionsButton = new Button();
             menuStrip.SuspendLayout();
             statusStrip.SuspendLayout();
             viewToolStrip.SuspendLayout();
@@ -92,7 +93,7 @@
             projectComboBox.Font = new Font("Segoe UI", 12F);
             projectComboBox.Location = new Point(15, 109);
             projectComboBox.Name = "projectComboBox";
-            projectComboBox.Size = new Size(1560, 36);
+            projectComboBox.Size = new Size(1337, 36);
             projectComboBox.TabIndex = 1;
             projectComboBox.SelectedIndexChanged += ProjectComboBox_SelectedIndexChanged;
             // 
@@ -222,6 +223,23 @@
             detailsButton.Text = "Details";
             detailsButton.Click += detailsButton_Click;
             // 
+            // addPermissionsButton
+            // 
+            addPermissionsButton.BackColor = Color.FromArgb(0, 102, 204);
+            addPermissionsButton.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
+            addPermissionsButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            addPermissionsButton.FlatStyle = FlatStyle.Flat;
+            addPermissionsButton.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            addPermissionsButton.ForeColor = Color.White;
+            addPermissionsButton.Location = new Point(1358, 109);
+            addPermissionsButton.Name = "addPermissionsButton";
+            addPermissionsButton.Size = new Size(217, 36);
+            addPermissionsButton.TabIndex = 6;
+            addPermissionsButton.Text = "Add Permissions";
+            addPermissionsButton.UseVisualStyleBackColor = false;
+            addPermissionsButton.Visible = false;
+            addPermissionsButton.Click += AddPermissionsButton_Click;
+            // 
             // MainForm
             // 
             BackColor = Color.FromArgb(173, 216, 230);
@@ -235,6 +253,7 @@
             Controls.Add(backButton);
             Controls.Add(menuStrip);
             Controls.Add(statusStrip);
+            Controls.Add(addPermissionsButton);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStrip;
             MaximizeBox = false;
