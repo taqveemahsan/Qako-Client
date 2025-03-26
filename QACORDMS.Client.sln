@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QACORDMS.Client", "QACORDMS.Client\QACORDMS.Client.csproj", "{649CE641-2B80-448C-A2A0-9CC86647D7CB}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Qako-Setup", "Qako-Setup\Qako-Setup.vdproj", "{174AE6F9-9C31-1E04-A1D5-B5C98CB035F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,8 @@ Global
 		{649CE641-2B80-448C-A2A0-9CC86647D7CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{649CE641-2B80-448C-A2A0-9CC86647D7CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{649CE641-2B80-448C-A2A0-9CC86647D7CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{174AE6F9-9C31-1E04-A1D5-B5C98CB035F3}.Debug|Any CPU.ActiveCfg = Debug
+		{174AE6F9-9C31-1E04-A1D5-B5C98CB035F3}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
