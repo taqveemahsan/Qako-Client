@@ -67,7 +67,9 @@ namespace QACORDMS.Client
             {
                 addUserMenuItem.Visible = false;
             }
-            if (_userRole == "AuditManager" || _userRole == "TaxManager" || _userRole == "Partner")
+            if (_userRole == "AuditManager" || _userRole == "TaxManager" || _userRole == "Partner"
+                || _userRole == "CorporateManager" || _userRole == "AdvisoryManager" || _userRole == "ERPManager" || _userRole == "BookkeepingManager"
+                || _userRole == "OtherManager")
             {
                 addPermissionsButton.Visible = true;
             }

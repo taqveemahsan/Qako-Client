@@ -19,7 +19,7 @@ namespace QACORDMS.Client
 
         private void SetupRolesCheckedListBox()
         {
-            var roles = new[] { "Partner", "User", "TaxManager", "AuditManager" };
+            var roles = new[] { "Partner", "User", "TaxManager", "AuditManager", "CorporateManager", "AdvisoryManager, ERPManager", "BookkeepingManager", "OtherManager" };
             clbRoles.DataSource = roles;
         }
 

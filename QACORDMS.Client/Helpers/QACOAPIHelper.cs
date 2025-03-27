@@ -41,12 +41,6 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        //public async Task<List<Client>> GetClientsAsync()
-        //{
-        //    AddAuthorizationHeader();
-        //    return await _httpClient.GetFromJsonAsync<List<Client>>(_BaseUrl + "client/all");
-        //}
-
         public async Task<PagedClientResponse> GetClientsAsync(string search = "", int page = 1, int pageSize = 10)
         {
             AddAuthorizationHeader();
@@ -91,12 +85,6 @@ namespace QACORDMS.Client.Helpers
                 return false;
             }
         }
-
-        //public async Task<HttpResponseMessage> DeleteClientAsync(int id)
-        //{
-        //    AddAuthorizationHeader();
-        //    return await _httpClient.DeleteAsync(_BaseUrl + $"client/{id}");
-        //}
 
         public async Task<bool> DeleteClientAsync(Guid id)
         {
