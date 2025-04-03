@@ -43,13 +43,21 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\Qako-Setup.msi"
+        "OutputFilename" = "8:Release\\Qaco-Setup.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -59,6 +67,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
     }
     "Deployable"
@@ -76,6 +92,16 @@
         {
             "LaunchCondition"
             {
+                "{A06ECF26-33A3-4562-8140-9B0E340D4F24}:_3DEF40D646534A949438B09C53C73184"
+                {
+                "Name" = "8:.NET Core"
+                "Message" = "8:[VSDNETCOREMSG]"
+                "AllowLaterVersions" = "11:FALSE"
+                "InstallUrl" = "8:https://dotnet.microsoft.com/download/dotnet-core/[NetCoreVerMajorDotMinor]"
+                "IsNETCore" = "11:TRUE"
+                "Architecture" = "2:0"
+                "Runtime" = "2:0"
+                }
             }
         }
         "File"
@@ -279,7 +305,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_52AB8527C8F741E09C1A956E54273443"
             {
-            "Name" = "8:Qako"
+            "Name" = "8:Qaco"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -293,7 +319,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_A81AAD106C3C40268097EF69FB69FA3D"
             {
-            "Name" = "8:Qako"
+            "Name" = "8:Qaco"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -706,7 +732,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_CB8EE8D32A48455DBFBDA28FA38CD70E"
             {
-            "SourcePath" = "8:..\\QACORDMS.Client\\obj\\Debug\\net8.0-windows\\apphost.exe"
+            "SourcePath" = "8:..\\QACORDMS.Client\\obj\\Release\\net8.0-windows\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_74ED72E18C7D437298FE1B3A0479343C"

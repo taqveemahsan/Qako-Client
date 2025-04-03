@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QACORDMS.Client.Helpers.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -327,6 +328,20 @@ namespace QACORDMS.Client.Helpers
         public class UploadResponse
         {
             public string FileId { get; set; }
+        }
+
+        public async Task<FolderStructureResponse> GetFolderStructureListAsync(string search = "", int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                var query = $"Client/folder-structure?search={Uri.EscapeDataString(search)}&page={page}&pageSize={pageSize}";
+                var response = await _httpClient.GetFromJsonAsync<FolderStructureResponse>(_BaseUrl + query);
+                return response ?? new FolderStructureResponse();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to fetch folder structure: {ex.Message}");
+            }
         }
     }
 }

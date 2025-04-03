@@ -25,6 +25,7 @@ namespace QACORDMS.Client
         private ToolStripMenuItem addUserMenuItem;
         private Dictionary<string, System.Diagnostics.Process> openedFiles = new Dictionary<string, System.Diagnostics.Process>();
         private Button addPermissionsButton;
+        private ToolStripMenuItem settingsMenuItem; // Add this field
 
         public MainForm(QACOAPIHelper apiHelper, string userRole = null)
         {
@@ -280,13 +281,39 @@ namespace QACORDMS.Client
                 MessageBox.Show("No previous folder to go back to.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
+        private void SettingsMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var folderStructureForm = new FolderStructureForm(_apiHelper);
+                folderStructureForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open Folder Structure form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
-        private void refreshMenuItem_Click(object sender, EventArgs e)
+        //private void refreshMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        var clientsForm = new ClientsForm(_apiHelper);
+        //        clientsForm.Show();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Failed to open Clients form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
+
+        private async void refreshMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
                 var clientsForm = new ClientsForm(_apiHelper);
-                clientsForm.Show();
+                clientsForm.ShowDialog();
+                LoadClientsAsync();
             }
             catch (Exception ex)
             {
