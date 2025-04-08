@@ -3,7 +3,7 @@
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
 "IsWebType" = "8:FALSE"
-"ProjectName" = "8:Qako-Setup"
+"ProjectName" = "8:BAKERTILLY-DMS"
 "LanguageId" = "3:1033"
 "CodePage" = "3:1252"
 "UILanguageId" = "3:1033"
@@ -33,7 +33,7 @@
         "DisplayName" = "8:Debug"
         "IsDebugOnly" = "11:TRUE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Debug\\Qako-Setup.msi"
+        "OutputFilename" = "8:Debug\\Bakertilly.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -50,6 +50,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
         "Release"
@@ -57,7 +65,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\Qaco-Setup.msi"
+        "OutputFilename" = "8:Release\\Bakertilly.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -74,6 +82,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
     }
@@ -181,9 +197,9 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:Qako-Setup"
+        "ProductName" = "8:Bakertilly"
         "ProductCode" = "8:{927F0F80-AE97-4F2D-915A-B107F887C51A}"
-        "PackageCode" = "8:{48E8EB3A-1AAE-4383-ACB9-B95A3BC25263}"
+        "PackageCode" = "8:{B820C051-3ED6-4775-97A8-0A389C81899D}"
         "UpgradeCode" = "8:{9CC7825B-19E6-4F98-AE85-C7D719852754}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -194,7 +210,7 @@
         "Manufacturer" = "8:Taqi"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:Qako-Setup"
+        "Title" = "8:Bakertilly"
         "Subject" = "8:"
         "ARPCONTACT" = "8:Taqi"
         "Keywords" = "8:"
@@ -305,7 +321,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_52AB8527C8F741E09C1A956E54273443"
             {
-            "Name" = "8:Qaco"
+            "Name" = "8:Bakertilly"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -319,7 +335,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_A81AAD106C3C40268097EF69FB69FA3D"
             {
-            "Name" = "8:Qaco"
+            "Name" = "8:Bakertilly"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"

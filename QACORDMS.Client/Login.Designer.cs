@@ -28,19 +28,20 @@
             panelContainer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxLogo).BeginInit();
             SuspendLayout();
-
+            // 
             // txtUsername
+            // 
             txtUsername.BackColor = Color.FromArgb(245, 245, 245);
             txtUsername.BorderStyle = BorderStyle.FixedSingle;
             txtUsername.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
             txtUsername.Location = new Point(50, 180);
             txtUsername.Name = "txtUsername";
             txtUsername.PlaceholderText = "Enter Username";
-            txtUsername.Size = new Size(450, 40);
+            txtUsername.Size = new Size(450, 39);
             txtUsername.TabIndex = 3;
-            txtUsername.Padding = new Padding(8);
-
+            // 
             // txtPassword
+            // 
             txtPassword.BackColor = Color.FromArgb(245, 245, 245);
             txtPassword.BorderStyle = BorderStyle.FixedSingle;
             txtPassword.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -48,11 +49,11 @@
             txtPassword.Name = "txtPassword";
             txtPassword.PasswordChar = '*';
             txtPassword.PlaceholderText = "Enter Password";
-            txtPassword.Size = new Size(390, 40);
+            txtPassword.Size = new Size(390, 39);
             txtPassword.TabIndex = 5;
-            txtPassword.Padding = new Padding(8);
-
+            // 
             // btnLogin
+            // 
             btnLogin.BackColor = Color.FromArgb(0, 102, 204);
             btnLogin.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
             btnLogin.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
@@ -66,52 +67,31 @@
             btnLogin.Text = "Login";
             btnLogin.UseVisualStyleBackColor = false;
             btnLogin.Click += btnLogin_Click;
-
+            // 
             // lblUsername
+            // 
             lblUsername.AutoSize = true;
             lblUsername.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
             lblUsername.ForeColor = Color.FromArgb(0, 102, 204);
-            lblUsername.Location = new Point(50, 150);
+            lblUsername.Location = new Point(46, 145);
             lblUsername.Name = "lblUsername";
-            lblUsername.Size = new Size(103, 28);
+            lblUsername.Size = new Size(126, 32);
             lblUsername.TabIndex = 2;
             lblUsername.Text = "Username:";
-
+            // 
             // lblPassword
+            // 
             lblPassword.AutoSize = true;
             lblPassword.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
             lblPassword.ForeColor = Color.FromArgb(0, 102, 204);
-            lblPassword.Location = new Point(50, 240);
+            lblPassword.Location = new Point(46, 235);
             lblPassword.Name = "lblPassword";
-            lblPassword.Size = new Size(97, 28);
+            lblPassword.Size = new Size(116, 32);
             lblPassword.TabIndex = 4;
             lblPassword.Text = "Password:";
-
-            // pictureBoxLogo
-            pictureBoxLogo.ImageLocation = "C:\\Projects\\Qako\\Qako-Client\\QACORDMS.Client\\logo.png";
-            pictureBoxLogo.Location = new Point(50, 30);
-            pictureBoxLogo.Name = "pictureBoxLogo";
-            pictureBoxLogo.Size = new Size(450, 100);
-            pictureBoxLogo.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBoxLogo.TabIndex = 1;
-            pictureBoxLogo.TabStop = false;
-
-            // btnTogglePassword
-            btnTogglePassword.BackColor = Color.FromArgb(0, 102, 204);
-            btnTogglePassword.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            btnTogglePassword.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
-            btnTogglePassword.FlatStyle = FlatStyle.Flat;
-            btnTogglePassword.Font = new Font("Segoe UI", 14F);
-            btnTogglePassword.ForeColor = Color.White;
-            btnTogglePassword.Location = new Point(445, 270);
-            btnTogglePassword.Name = "btnTogglePassword";
-            btnTogglePassword.Size = new Size(55, 40);
-            btnTogglePassword.TabIndex = 6;
-            btnTogglePassword.Text = "👁️";
-            btnTogglePassword.UseVisualStyleBackColor = false;
-            btnTogglePassword.Click += btnTogglePassword_Click;
-
+            // 
             // panelContainer
+            // 
             panelContainer.BackColor = Color.White;
             panelContainer.BorderStyle = BorderStyle.FixedSingle;
             panelContainer.Controls.Add(pictureBoxLogo);
@@ -125,8 +105,35 @@
             panelContainer.Name = "panelContainer";
             panelContainer.Size = new Size(550, 450);
             panelContainer.TabIndex = 0;
-
+            // 
+            // pictureBoxLogo
+            // 
+            pictureBoxLogo.ImageLocation = "https://sorrowplace9876.s3.us-east-005.backblazeb2.com/logo.png";
+            pictureBoxLogo.Location = new Point(50, 30);
+            pictureBoxLogo.Name = "pictureBoxLogo";
+            pictureBoxLogo.Size = new Size(450, 100);
+            pictureBoxLogo.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBoxLogo.TabIndex = 1;
+            pictureBoxLogo.TabStop = false;
+            // 
+            // btnTogglePassword
+            // 
+            btnTogglePassword.BackColor = Color.FromArgb(0, 102, 204);
+            btnTogglePassword.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
+            btnTogglePassword.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            btnTogglePassword.FlatStyle = FlatStyle.Flat;
+            btnTogglePassword.Font = new Font("Segoe UI", 14F);
+            btnTogglePassword.ForeColor = Color.White;
+            btnTogglePassword.Location = new Point(445, 269);
+            btnTogglePassword.Name = "btnTogglePassword";
+            btnTogglePassword.Size = new Size(55, 40);
+            btnTogglePassword.TabIndex = 6;
+            btnTogglePassword.Text = "👁️";
+            btnTogglePassword.UseVisualStyleBackColor = false;
+            btnTogglePassword.Click += btnTogglePassword_Click;
+            // 
             // Login
+            // 
             AcceptButton = btnLogin;
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -138,7 +145,7 @@
             MinimizeBox = false;
             Name = "Login";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Login - QACO DMS";
+            Text = "Login - BAKERTILLY DMS";
             Load += Login_Load;
             panelContainer.ResumeLayout(false);
             panelContainer.PerformLayout();
