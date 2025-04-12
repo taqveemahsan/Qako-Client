@@ -50,6 +50,8 @@ namespace QACORDMS.Client
             listView1.DragEnter += ListView1_DragEnter;
             listView1.DragDrop += ListView1_DragDrop;
 
+            WindowState = FormWindowState.Maximized; // Set form to maximized state
+
             CustomizeUIForRole();
         }
 
@@ -705,10 +707,39 @@ namespace QACORDMS.Client
         private void button1_Click(object sender, EventArgs e)
         {
             SessionHelper.CurrentUser = null;
-            var loginForm = new Login();
-            loginForm.Show();
-            this.Close();
+
+            string tokenPath = Path.Combine(Application.LocalUserAppDataPath, "token.json");
+            if (File.Exists(tokenPath))
+            {
+                File.Delete(tokenPath);
+            }
+
+            var loginForm = new Login(_apiHelper);
+
+            this.Hide();
+            loginForm.ShowDialog();
+
+            if (loginForm.DialogResult == DialogResult.OK)
+            {
+                var newMainForm = new MainForm(_apiHelper, SessionHelper.CurrentUser.Role);
+                this.Close();
+                Application.Run(newMainForm);
+            }
+            else
+            {
+                this.Close();
+                Application.Exit();
+            }
         }
+
+        //private void button1_Click(object sender, EventArgs e)
+        //{
+        //    SessionHelper.CurrentUser = null;
+        //    var loginForm = new Login(_apiHelper);
+        //    this.Hide();
+        //    loginForm.Show();
+        //    this.Close();
+        //}
 
         private void smallIconsButton_Click(object sender, EventArgs e)
         {

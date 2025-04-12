@@ -25,45 +25,47 @@
             panelContainer = new Panel();
             pictureBoxLogo = new PictureBox();
             btnTogglePassword = new Button();
+            chkRememberMe = new CheckBox();
+            lnkForgotPassword = new LinkLabel(); // New Forgot Password link
             panelContainer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxLogo).BeginInit();
             SuspendLayout();
             // 
             // txtUsername
             // 
-            txtUsername.BackColor = Color.FromArgb(245, 245, 245);
+            txtUsername.BackColor = Color.FromArgb(240, 240, 240);
             txtUsername.BorderStyle = BorderStyle.FixedSingle;
             txtUsername.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            txtUsername.Location = new Point(50, 180);
+            txtUsername.Location = new Point(60, 200);
             txtUsername.Name = "txtUsername";
             txtUsername.PlaceholderText = "Enter Username";
-            txtUsername.Size = new Size(450, 39);
-            txtUsername.TabIndex = 3;
+            txtUsername.Size = new Size(480, 40);
+            txtUsername.TabIndex = 1;
             // 
             // txtPassword
             // 
-            txtPassword.BackColor = Color.FromArgb(245, 245, 245);
+            txtPassword.BackColor = Color.FromArgb(240, 240, 240);
             txtPassword.BorderStyle = BorderStyle.FixedSingle;
             txtPassword.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            txtPassword.Location = new Point(50, 270);
+            txtPassword.Location = new Point(60, 290);
             txtPassword.Name = "txtPassword";
             txtPassword.PasswordChar = '*';
             txtPassword.PlaceholderText = "Enter Password";
-            txtPassword.Size = new Size(390, 39);
-            txtPassword.TabIndex = 5;
+            txtPassword.Size = new Size(420, 40);
+            txtPassword.TabIndex = 2;
             // 
             // btnLogin
             // 
-            btnLogin.BackColor = Color.FromArgb(0, 102, 204);
-            btnLogin.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            btnLogin.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            btnLogin.BackColor = Color.FromArgb(0, 120, 215); // Slightly lighter blue for modern look
+            btnLogin.FlatAppearance.BorderSize = 0;
+            btnLogin.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 100, 180);
             btnLogin.FlatStyle = FlatStyle.Flat;
             btnLogin.Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnLogin.ForeColor = Color.White;
-            btnLogin.Location = new Point(50, 350);
+            btnLogin.Location = new Point(60, 400);
             btnLogin.Name = "btnLogin";
-            btnLogin.Size = new Size(450, 50);
-            btnLogin.TabIndex = 7;
+            btnLogin.Size = new Size(480, 50);
+            btnLogin.TabIndex = 4;
             btnLogin.Text = "Login";
             btnLogin.UseVisualStyleBackColor = false;
             btnLogin.Click += btnLogin_Click;
@@ -72,23 +74,48 @@
             // 
             lblUsername.AutoSize = true;
             lblUsername.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblUsername.ForeColor = Color.FromArgb(0, 102, 204);
-            lblUsername.Location = new Point(46, 145);
+            lblUsername.ForeColor = Color.FromArgb(0, 120, 215);
+            lblUsername.Location = new Point(56, 165);
             lblUsername.Name = "lblUsername";
             lblUsername.Size = new Size(126, 32);
-            lblUsername.TabIndex = 2;
-            lblUsername.Text = "Username:";
+            lblUsername.TabIndex = 0;
+            lblUsername.Text = "Username";
             // 
             // lblPassword
             // 
             lblPassword.AutoSize = true;
             lblPassword.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblPassword.ForeColor = Color.FromArgb(0, 102, 204);
-            lblPassword.Location = new Point(46, 235);
+            lblPassword.ForeColor = Color.FromArgb(0, 120, 215);
+            lblPassword.Location = new Point(56, 255);
             lblPassword.Name = "lblPassword";
             lblPassword.Size = new Size(116, 32);
-            lblPassword.TabIndex = 4;
-            lblPassword.Text = "Password:";
+            lblPassword.TabIndex = 0;
+            lblPassword.Text = "Password";
+            // 
+            // chkRememberMe
+            // 
+            chkRememberMe.AutoSize = true;
+            chkRememberMe.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            chkRememberMe.Location = new Point(60, 355);
+            chkRememberMe.Name = "chkRememberMe";
+            chkRememberMe.Size = new Size(120, 32);
+            chkRememberMe.TabIndex = 3;
+            chkRememberMe.Text = "Remember Me";
+            chkRememberMe.ForeColor = Color.FromArgb(0, 120, 215);
+            // 
+            // lnkForgotPassword
+            // 
+            lnkForgotPassword.AutoSize = true;
+            lnkForgotPassword.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lnkForgotPassword.LinkColor = Color.FromArgb(0, 120, 215);
+            lnkForgotPassword.ActiveLinkColor = Color.FromArgb(0, 100, 180);
+            lnkForgotPassword.Location = new Point(380, 335);
+            lnkForgotPassword.Name = "lnkForgotPassword";
+            lnkForgotPassword.Size = new Size(120, 28);
+            lnkForgotPassword.TabIndex = 5;
+            lnkForgotPassword.TabStop = true;
+            lnkForgotPassword.Text = "Forgot Password?";
+            lnkForgotPassword.LinkClicked += lnkForgotPassword_LinkClicked;
             // 
             // panelContainer
             // 
@@ -101,33 +128,35 @@
             panelContainer.Controls.Add(txtPassword);
             panelContainer.Controls.Add(btnTogglePassword);
             panelContainer.Controls.Add(btnLogin);
-            panelContainer.Location = new Point(75, 75);
+            panelContainer.Controls.Add(chkRememberMe);
+            panelContainer.Controls.Add(lnkForgotPassword);
+            panelContainer.Location = new Point(100, 80);
             panelContainer.Name = "panelContainer";
-            panelContainer.Size = new Size(550, 450);
+            panelContainer.Size = new Size(600, 500);
             panelContainer.TabIndex = 0;
             // 
             // pictureBoxLogo
             // 
             pictureBoxLogo.ImageLocation = "https://sorrowplace9876.s3.us-east-005.backblazeb2.com/logo.png";
-            pictureBoxLogo.Location = new Point(50, 30);
+            pictureBoxLogo.Location = new Point(60, 30);
             pictureBoxLogo.Name = "pictureBoxLogo";
-            pictureBoxLogo.Size = new Size(450, 100);
+            pictureBoxLogo.Size = new Size(480, 120);
             pictureBoxLogo.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBoxLogo.TabIndex = 1;
+            pictureBoxLogo.TabIndex = 0;
             pictureBoxLogo.TabStop = false;
             // 
             // btnTogglePassword
             // 
-            btnTogglePassword.BackColor = Color.FromArgb(0, 102, 204);
-            btnTogglePassword.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            btnTogglePassword.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            btnTogglePassword.BackColor = Color.FromArgb(0, 120, 215);
+            btnTogglePassword.FlatAppearance.BorderSize = 0;
+            btnTogglePassword.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 100, 180);
             btnTogglePassword.FlatStyle = FlatStyle.Flat;
             btnTogglePassword.Font = new Font("Segoe UI", 14F);
             btnTogglePassword.ForeColor = Color.White;
-            btnTogglePassword.Location = new Point(445, 269);
+            btnTogglePassword.Location = new Point(485, 289);
             btnTogglePassword.Name = "btnTogglePassword";
-            btnTogglePassword.Size = new Size(55, 40);
-            btnTogglePassword.TabIndex = 6;
+            btnTogglePassword.Size = new Size(55, 42);
+            btnTogglePassword.TabIndex = 0;
             btnTogglePassword.Text = "👁️";
             btnTogglePassword.UseVisualStyleBackColor = false;
             btnTogglePassword.Click += btnTogglePassword_Click;
@@ -137,8 +166,8 @@
             AcceptButton = btnLogin;
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(173, 216, 230);
-            ClientSize = new Size(700, 600);
+            BackColor = Color.FromArgb(200, 220, 240); // Softer blue background
+            ClientSize = new Size(800, 650); // Increased form size
             Controls.Add(panelContainer);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -163,8 +192,18 @@
         private System.Windows.Forms.Panel panelContainer;
         private System.Windows.Forms.PictureBox pictureBoxLogo;
         private System.Windows.Forms.Button btnTogglePassword;
+        private System.Windows.Forms.CheckBox chkRememberMe;
+        private System.Windows.Forms.LinkLabel lnkForgotPassword; // New Forgot Password link
     }
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -174,6 +213,8 @@
 //    partial class Login
 //    {
 //        private System.ComponentModel.IContainer components = null;
+//        //private CheckBox chkRememberMe;
+//        //private Button btnReset;
 
 //        protected override void Dispose(bool disposing)
 //        {
@@ -193,40 +234,50 @@
 //            btnLogin = new Button();
 //            lblUsername = new Label();
 //            lblPassword = new Label();
-//            lblTitle = new Label();
 //            panelContainer = new Panel();
+//            pictureBoxLogo = new PictureBox();
+//            btnTogglePassword = new Button();
+//            chkRememberMe = new CheckBox();
+//            btnReset = new Button();
 //            panelContainer.SuspendLayout();
+//            ((System.ComponentModel.ISupportInitialize)pictureBoxLogo).BeginInit();
 //            SuspendLayout();
 //            // 
 //            // txtUsername
 //            // 
+//            txtUsername.BackColor = Color.FromArgb(245, 245, 245);
 //            txtUsername.BorderStyle = BorderStyle.FixedSingle;
-//            txtUsername.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
-//            txtUsername.Location = new Point(35, 98);
+//            txtUsername.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+//            txtUsername.Location = new Point(50, 180);
 //            txtUsername.Name = "txtUsername";
-//            txtUsername.Size = new Size(368, 25);
+//            txtUsername.PlaceholderText = "Enter Username";
+//            txtUsername.Size = new Size(450, 39);
 //            txtUsername.TabIndex = 3;
 //            // 
 //            // txtPassword
 //            // 
+//            txtPassword.BackColor = Color.FromArgb(245, 245, 245);
 //            txtPassword.BorderStyle = BorderStyle.FixedSingle;
-//            txtPassword.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
-//            txtPassword.Location = new Point(35, 158);
+//            txtPassword.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+//            txtPassword.Location = new Point(50, 270);
 //            txtPassword.Name = "txtPassword";
 //            txtPassword.PasswordChar = '*';
-//            txtPassword.Size = new Size(368, 25);
+//            txtPassword.PlaceholderText = "Enter Password";
+//            txtPassword.Size = new Size(390, 39);
 //            txtPassword.TabIndex = 5;
 //            // 
 //            // btnLogin
 //            // 
-//            btnLogin.BackColor = Color.FromArgb(0, 64, 128);
+//            btnLogin.BackColor = Color.FromArgb(0, 102, 204);
+//            btnLogin.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
+//            btnLogin.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
 //            btnLogin.FlatStyle = FlatStyle.Flat;
-//            btnLogin.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+//            btnLogin.Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point, 0);
 //            btnLogin.ForeColor = Color.White;
-//            btnLogin.Location = new Point(175, 210);
+//            btnLogin.Location = new Point(50, 350);
 //            btnLogin.Name = "btnLogin";
-//            btnLogin.Size = new Size(105, 30);
-//            btnLogin.TabIndex = 6;
+//            btnLogin.Size = new Size(220, 50);
+//            btnLogin.TabIndex = 7;
 //            btnLogin.Text = "Login";
 //            btnLogin.UseVisualStyleBackColor = false;
 //            btnLogin.Click += btnLogin_Click;
@@ -234,68 +285,114 @@
 //            // lblUsername
 //            // 
 //            lblUsername.AutoSize = true;
-//            lblUsername.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
-//            lblUsername.Location = new Point(35, 75);
+//            lblUsername.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+//            lblUsername.ForeColor = Color.FromArgb(0, 102, 204);
+//            lblUsername.Location = new Point(46, 145);
 //            lblUsername.Name = "lblUsername";
-//            lblUsername.Size = new Size(74, 19);
+//            lblUsername.Size = new Size(126, 32);
 //            lblUsername.TabIndex = 2;
 //            lblUsername.Text = "Username:";
 //            // 
 //            // lblPassword
 //            // 
 //            lblPassword.AutoSize = true;
-//            lblPassword.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
-//            lblPassword.Location = new Point(35, 135);
+//            lblPassword.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+//            lblPassword.ForeColor = Color.FromArgb(0, 102, 204);
+//            lblPassword.Location = new Point(46, 235);
 //            lblPassword.Name = "lblPassword";
-//            lblPassword.Size = new Size(70, 19);
+//            lblPassword.Size = new Size(116, 32);
 //            lblPassword.TabIndex = 4;
 //            lblPassword.Text = "Password:";
 //            // 
-//            // lblTitle
+//            // chkRememberMe
 //            // 
-//            lblTitle.AutoSize = true;
-//            lblTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold, GraphicsUnit.Point, 0);
-//            lblTitle.ForeColor = Color.FromArgb(0, 64, 128);
-//            lblTitle.Location = new Point(158, 30);
-//            lblTitle.Name = "lblTitle";
-//            lblTitle.Size = new Size(222, 30);
-//            lblTitle.TabIndex = 1;
-//            lblTitle.Text = "Login to QACO DMS";
-//            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+//            chkRememberMe.AutoSize = true;
+//            chkRememberMe.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+//            chkRememberMe.Location = new Point(50, 410);
+//            chkRememberMe.Name = "chkRememberMe";
+//            chkRememberMe.Size = new Size(120, 32);
+//            chkRememberMe.TabIndex = 8;
+//            chkRememberMe.Text = "Remember Me";
+//            chkRememberMe.ForeColor = Color.FromArgb(0, 102, 204);
+//            // 
+//            // btnReset
+//            // 
+//            btnReset.BackColor = Color.FromArgb(0, 102, 204);
+//            btnReset.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
+//            btnReset.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+//            btnReset.FlatStyle = FlatStyle.Flat;
+//            btnReset.Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point, 0);
+//            btnReset.ForeColor = Color.White;
+//            btnReset.Location = new Point(280, 350);
+//            btnReset.Name = "btnReset";
+//            btnReset.Size = new Size(220, 50);
+//            btnReset.TabIndex = 9;
+//            btnReset.Text = "Reset";
+//            btnReset.UseVisualStyleBackColor = false;
+//            btnReset.Click += btnReset_Click; // Added event handler
 //            // 
 //            // panelContainer
 //            // 
 //            panelContainer.BackColor = Color.White;
 //            panelContainer.BorderStyle = BorderStyle.FixedSingle;
-//            panelContainer.Controls.Add(lblTitle);
+//            panelContainer.Controls.Add(btnReset);
+//            panelContainer.Controls.Add(chkRememberMe);
+//            panelContainer.Controls.Add(pictureBoxLogo);
 //            panelContainer.Controls.Add(lblUsername);
 //            panelContainer.Controls.Add(txtUsername);
 //            panelContainer.Controls.Add(lblPassword);
 //            panelContainer.Controls.Add(txtPassword);
+//            panelContainer.Controls.Add(btnTogglePassword);
 //            panelContainer.Controls.Add(btnLogin);
-//            panelContainer.Location = new Point(44, 38);
-//            panelContainer.Margin = new Padding(3, 2, 3, 2);
+//            panelContainer.Location = new Point(75, 75);
 //            panelContainer.Name = "panelContainer";
-//            panelContainer.Size = new Size(438, 300);
+//            panelContainer.Size = new Size(550, 450);
 //            panelContainer.TabIndex = 0;
+//            // 
+//            // pictureBoxLogo
+//            // 
+//            pictureBoxLogo.ImageLocation = "https://sorrowplace9876.s3.us-east-005.backblazeb2.com/logo.png";
+//            pictureBoxLogo.Location = new Point(50, 30);
+//            pictureBoxLogo.Name = "pictureBoxLogo";
+//            pictureBoxLogo.Size = new Size(450, 100);
+//            pictureBoxLogo.SizeMode = PictureBoxSizeMode.Zoom;
+//            pictureBoxLogo.TabIndex = 1;
+//            pictureBoxLogo.TabStop = false;
+//            // 
+//            // btnTogglePassword
+//            // 
+//            btnTogglePassword.BackColor = Color.FromArgb(0, 102, 204);
+//            btnTogglePassword.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
+//            btnTogglePassword.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+//            btnTogglePassword.FlatStyle = FlatStyle.Flat;
+//            btnTogglePassword.Font = new Font("Segoe UI", 14F);
+//            btnTogglePassword.ForeColor = Color.White;
+//            btnTogglePassword.Location = new Point(445, 269);
+//            btnTogglePassword.Name = "btnTogglePassword";
+//            btnTogglePassword.Size = new Size(55, 40);
+//            btnTogglePassword.TabIndex = 6;
+//            btnTogglePassword.Text = "👁️";
+//            btnTogglePassword.UseVisualStyleBackColor = false;
+//            btnTogglePassword.Click += btnTogglePassword_Click;
 //            // 
 //            // Login
 //            // 
 //            AcceptButton = btnLogin;
-//            AutoScaleDimensions = new SizeF(7F, 15F);
+//            AutoScaleDimensions = new SizeF(8F, 20F);
 //            AutoScaleMode = AutoScaleMode.Font;
-//            BackColor = Color.FromArgb(240, 240, 240);
-//            ClientSize = new Size(525, 375);
+//            BackColor = Color.FromArgb(173, 216, 230);
+//            ClientSize = new Size(700, 600);
 //            Controls.Add(panelContainer);
 //            FormBorderStyle = FormBorderStyle.FixedDialog;
 //            MaximizeBox = false;
 //            MinimizeBox = false;
 //            Name = "Login";
 //            StartPosition = FormStartPosition.CenterScreen;
-//            Text = "Login - QACO DMS";
+//            Text = "Login - BAKERTILLY DMS";
 //            Load += Login_Load;
 //            panelContainer.ResumeLayout(false);
 //            panelContainer.PerformLayout();
+//            ((System.ComponentModel.ISupportInitialize)pictureBoxLogo).EndInit();
 //            ResumeLayout(false);
 //        }
 
@@ -306,7 +403,10 @@
 //        private System.Windows.Forms.Button btnLogin;
 //        private System.Windows.Forms.Label lblUsername;
 //        private System.Windows.Forms.Label lblPassword;
-//        private System.Windows.Forms.Label lblTitle;
 //        private System.Windows.Forms.Panel panelContainer;
+//        private System.Windows.Forms.PictureBox pictureBoxLogo;
+//        private System.Windows.Forms.Button btnTogglePassword;
+//        private System.Windows.Forms.CheckBox chkRememberMe;
+//        private System.Windows.Forms.Button btnReset;
 //    }
 //}

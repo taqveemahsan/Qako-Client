@@ -51,5 +51,10 @@ namespace QACORDMS.Client.Helpers
         public string SecondName { get; set; }
         public string Role { get; set; }
         public string Token { get; set; }
+
+        public static implicit operator APIUserModel(User v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
