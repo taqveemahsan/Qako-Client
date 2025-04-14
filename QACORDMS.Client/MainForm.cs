@@ -1,6 +1,7 @@
 using Microsoft.VisualBasic.ApplicationServices;
 using QACORDMS.Client.Helpers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -26,6 +27,9 @@ namespace QACORDMS.Client
         private Dictionary<string, System.Diagnostics.Process> openedFiles = new Dictionary<string, System.Diagnostics.Process>();
         private Button addPermissionsButton;
         private ToolStripMenuItem settingsMenuItem; // Add this field
+
+        private int sortColumn = -1; // -1 means no column is sorted initially
+        private SortOrder sortOrder = SortOrder.Ascending; // Default sort order
 
         public MainForm(QACOAPIHelper apiHelper, string userRole = null)
         {
@@ -80,6 +84,28 @@ namespace QACORDMS.Client
             {
                 addPermissionsButton.Visible = false;
             }
+        }
+
+        // Event handler for column click (sorting)
+        private void ListView1_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            // If the same column is clicked, toggle the sort order
+            if (e.Column == sortColumn)
+            {
+                sortOrder = (sortOrder == SortOrder.Ascending) ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                // If a different column is clicked, reset to ascending
+                sortColumn = e.Column;
+                sortOrder = SortOrder.Ascending;
+            }
+
+            // Set the ListViewItemSorter property to a new instance of ListViewItemComparer
+            listView1.ListViewItemSorter = new ListViewItemComparer(e.Column, sortOrder);
+
+            // Call Sort to apply the sorting
+            listView1.Sort();
         }
 
         private async void LoadClientsAsync()
@@ -809,6 +835,64 @@ namespace QACORDMS.Client
             prompt.AcceptButton = confirmation;
 
             return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+        }
+    }
+
+    // Custom comparer class for sorting ListView items
+    public class ListViewItemComparer : IComparer
+    {
+        private int column;
+        private SortOrder order;
+
+        public ListViewItemComparer(int column, SortOrder order)
+        {
+            this.column = column;
+            this.order = order;
+        }
+
+        public int Compare(object x, object y)
+        {
+            int returnVal = 0;
+            ListViewItem itemX = (ListViewItem)x;
+            ListViewItem itemY = (ListViewItem)y;
+
+            // Compare based on the column
+            switch (column)
+            {
+                case 0: // Name column
+                    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+                    break;
+                case 1: // Type column
+                    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+                    break;
+                case 2: // Size column
+                    // Parse size (e.g., "128996 KB" to 128996)
+                    long sizeX = ParseSize(itemX.SubItems[column].Text);
+                    long sizeY = ParseSize(itemY.SubItems[column].Text);
+                    returnVal = sizeX.CompareTo(sizeY);
+                    break;
+            }
+
+            // If descending order, reverse the result
+            if (order == SortOrder.Descending)
+                returnVal = -returnVal;
+
+            return returnVal;
+        }
+
+        // Helper method to parse size strings (e.g., "128996 KB" to 128996)
+        private long ParseSize(string sizeText)
+        {
+            if (string.IsNullOrEmpty(sizeText))
+                return 0;
+
+            // Split the size string (e.g., "128996 KB" -> "128996")
+            string[] parts = sizeText.Split(' ');
+            if (parts.Length > 0 && long.TryParse(parts[0], out long size))
+            {
+                return size;
+            }
+            return 0;
         }
     }
 }
