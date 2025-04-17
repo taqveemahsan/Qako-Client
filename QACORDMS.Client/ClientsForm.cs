@@ -18,6 +18,17 @@ namespace QACORDMS.Client
         {
             _apiHelper = apiHelper;
             InitializeComponent();
+
+            // Add KeyDown event for searchTextBox to handle Enter key
+            searchTextBox.KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true; // Prevent the "ding" sound on Enter
+                    searchButton_Click(sender, e); // Trigger the search button click event
+                }
+            };
+
             LoadClientsAsync().ConfigureAwait(false);
         }
 
@@ -37,8 +48,8 @@ namespace QACORDMS.Client
             foreach (var client in response.Clients)
             {
                 var index = clientsGridView.Rows.Add(client.Name, client.Email, client.Phone);
-                clientsGridView.Rows[index].Cells["AddProjectButton"].Value = "Add Project"; // Ensure text is set
-                clientsGridView.Rows[index].Cells["Delete"].Value = "Delete"; // Ensure text is set
+                clientsGridView.Rows[index].Cells["AddProjectButton"].Value = "Add Project";
+                clientsGridView.Rows[index].Cells["Delete"].Value = "Delete";
                 clientsGridView.Rows[index].Tag = client.Id;
             }
 
@@ -57,7 +68,6 @@ namespace QACORDMS.Client
         {
             if (e.RowIndex < 0) return;
 
-            // Null check for columns
             if (clientsGridView.Columns["Delete"] == null || clientsGridView.Columns["AddProjectButton"] == null)
             {
                 MessageBox.Show("Error: Delete or AddProjectButton column not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -115,82 +125,3 @@ namespace QACORDMS.Client
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//using QACORDMS.Client.Helpers;
-//using System;
-//using System.Drawing;
-//using System.Threading.Tasks;
-//using System.Windows.Forms;
-
-//namespace QACORDMS.Client
-//{
-//    public partial class ClientsForm : Form
-//    {
-//        public readonly QACOAPIHelper _apiHelper;
-
-//        public ClientsForm(QACOAPIHelper apiHelper)
-//        {
-//            _apiHelper = apiHelper;
-//            InitializeComponent();
-//            LoadClientsAsync().ConfigureAwait(false);
-//        }
-
-
-//        private async void addClientButton_Click(object sender, EventArgs e)
-//        {
-//            var addClientForm = new AddClientForm(_apiHelper);
-//            addClientForm.ShowDialog();
-//            await LoadClientsAsync();
-//        }
-
-//        private async Task LoadClientsAsync()
-//        {
-//            var clients = await _apiHelper.GetClientsAsync();
-//            clientsGridView.Rows.Clear();
-
-//            foreach (var client in clients)
-//            {
-//                var index = clientsGridView.Rows.Add(client.Name, client.Email, client.Phone);
-//                clientsGridView.Rows[index].Cells["AddProjectButton"].Value = "Add Project";
-//                clientsGridView.Rows[index].Tag = client.Id;
-//            }
-//        }
-
-//        private void OpenAddProjectForm(Guid clientId)
-//        {
-//            var addProjectForm = new AddNewProjectForm(clientId, _apiHelper);
-//            addProjectForm.ShowDialog();
-//        }
-
-
-//        private async void clientsGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
-//        {
-//            if (e.ColumnIndex == clientsGridView.Columns["Delete"].Index && e.RowIndex >= 0)
-//            {
-//                var clientId = (Guid)clientsGridView.Rows[e.RowIndex].Cells["Id"].Value;
-//                //await _apiHelper.DeleteClientAsync(clientId);
-//                await LoadClientsAsync();
-//            }
-//            if (e.ColumnIndex == clientsGridView.Columns["AddProjectButton"].Index && e.RowIndex >= 0)
-//            {
-//                var clientId = (Guid)clientsGridView.Rows[e.RowIndex].Tag;
-//                OpenAddProjectForm(clientId);
-//            }
-//        }
-
-//    }
-//}

@@ -12,8 +12,8 @@ namespace QACORDMS.Client.Helpers
 {
     public class QACOAPIHelper
     {
-        private const string _BaseUrl = "https://localhost:44372/api/"; // Local
-        //private const string _BaseUrl = "https://qako.ddns.net/api/"; // Prod
+        //private const string _BaseUrl = "https://localhost:44372/api/"; // Local
+        private const string _BaseUrl = "https://qako.ddns.net/api/"; // Prod
         private readonly HttpClient _httpClient;
 
         public QACOAPIHelper(HttpClient httpClient)

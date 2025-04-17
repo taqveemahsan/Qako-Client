@@ -18,6 +18,15 @@ namespace QACORDMS.Client
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             InitializeComponent();
             LoadUsersAsync().ConfigureAwait(false);
+
+            txtSearch.KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    btnSearch_Click(sender, e); // Trigger the search button click event
+                    e.SuppressKeyPress = true; // Prevent the Enter key from making a beep sound
+                }
+            };
         }
 
         private async void addUserButton_Click(object sender, EventArgs e)
@@ -70,7 +79,7 @@ namespace QACORDMS.Client
                     var roles = user.RoleNames != null && user.RoleNames.Any()
                         ? string.Join(", ", user.RoleNames)
                         : "None";
-                    var index = usersGridView.Rows.Add(fullName, user.Email, user.Username, roles);
+                    var index = usersGridView.Rows.Add(user.Email, user.Username, roles);
                     usersGridView.Rows[index].Tag = user.Id;
                 }
 
