@@ -59,5 +59,15 @@ namespace QACORDMS.Client.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] Spinner {
+            get {
+                object obj = ResourceManager.GetObject("Spinner", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }
