@@ -43,7 +43,7 @@
             menuStrip.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             menuStrip.ForeColor = Color.White;
             menuStrip.ImageScalingSize = new Size(24, 24);
-            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, uploadFileMenuItem, settingsMenuItem, addUserMenuItem });
+            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, settingsMenuItem, addUserMenuItem });
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Padding = new Padding(10, 2, 10, 2);
@@ -60,12 +60,12 @@
             refreshMenuItem.Text = "Clients";
             refreshMenuItem.Click += refreshMenuItem_Click;
             // 
-            // uploadFileMenuItem
-            // 
-            uploadFileMenuItem.Name = "uploadFileMenuItem";
-            uploadFileMenuItem.Size = new Size(126, 29);
-            uploadFileMenuItem.Text = "Upload File";
-            uploadFileMenuItem.Click += UploadFileMenuItem_Click;
+            //// uploadFileMenuItem
+            //// 
+            //uploadFileMenuItem.Name = "uploadFileMenuItem";
+            //uploadFileMenuItem.Size = new Size(126, 29);
+            //uploadFileMenuItem.Text = "Upload File";
+            //uploadFileMenuItem.Click += UploadFileMenuItem_Click;
             // 
             // settingsMenuItem
             // 
@@ -87,9 +87,9 @@
             clientsViewBox.ForeColor = Color.Black;
             clientsViewBox.FullRowSelect = true;
             clientsViewBox.HeaderStyle = ColumnHeaderStyle.None;
-            clientsViewBox.Location = new Point(15, 160);
+            clientsViewBox.Location = new Point(15, 154);
             clientsViewBox.Name = "clientsViewBox";
-            clientsViewBox.Size = new Size(280, 780);
+            clientsViewBox.Size = new Size(280, 786);
             clientsViewBox.TabIndex = 2;
             clientsViewBox.UseCompatibleStateImageBehavior = false;
             clientsViewBox.View = View.Details;
@@ -104,7 +104,7 @@
             projectComboBox.FlatStyle = FlatStyle.Flat;
             projectComboBox.Font = new Font("Segoe UI", 12F);
             projectComboBox.Items.AddRange(new object[] { "Audit" });
-            projectComboBox.Location = new Point(15, 116);
+            projectComboBox.Location = new Point(15, 111);
             projectComboBox.Name = "projectComboBox";
             projectComboBox.Size = new Size(1337, 36);
             projectComboBox.TabIndex = 1;
@@ -121,9 +121,9 @@
             listView1.ForeColor = Color.Black;
             listView1.FullRowSelect = true;
             listView1.LargeImageList = imageList1;
-            listView1.Location = new Point(305, 160);
+            listView1.Location = new Point(305, 154);
             listView1.Name = "listView1";
-            listView1.Size = new Size(1270, 780);
+            listView1.Size = new Size(1270, 786);
             listView1.SmallImageList = imageList1;
             listView1.StateImageList = imageList1;
             listView1.TabIndex = 3;
@@ -193,7 +193,7 @@
             backButton.FlatStyle = FlatStyle.Flat;
             backButton.Font = new Font("Segoe UI", 7F, FontStyle.Bold);
             backButton.ForeColor = Color.White;
-            backButton.Location = new Point(10, 41);
+            backButton.Location = new Point(15, 41);
             backButton.Name = "backButton";
             backButton.Size = new Size(77, 32);
             backButton.TabIndex = 5;
@@ -252,7 +252,7 @@
             addPermissionsButton.FlatStyle = FlatStyle.Flat;
             addPermissionsButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             addPermissionsButton.ForeColor = Color.White;
-            addPermissionsButton.Location = new Point(1358, 113);
+            addPermissionsButton.Location = new Point(1358, 111);
             addPermissionsButton.Name = "addPermissionsButton";
             addPermissionsButton.Size = new Size(217, 36);
             addPermissionsButton.TabIndex = 6;
@@ -265,7 +265,7 @@
             projectLabel.AutoSize = true;
             projectLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             projectLabel.ForeColor = Color.FromArgb(0, 102, 204);
-            projectLabel.Location = new Point(17, 83);
+            projectLabel.Location = new Point(16, 79);
             projectLabel.Name = "projectLabel";
             projectLabel.Size = new Size(88, 28);
             projectLabel.TabIndex = 10;
@@ -273,37 +273,37 @@
             // 
             // loaderPanel
             // 
-            loaderPanel = new Panel();
-            loaderPanel.BackColor = Color.Transparent; // Changed to Transparent
+            loaderPanel.BackColor = Color.FromArgb(200, 0, 0, 0);
             loaderPanel.Controls.Add(loaderPictureBox);
             loaderPanel.Controls.Add(loaderLabel);
-            loaderPanel.Location = new Point(0, 0);
-            loaderPanel.Size = new Size(this.ClientSize.Width, this.ClientSize.Height); // Dynamically set to form size
+            loaderPanel.Location = new Point(551, 305);
             loaderPanel.Name = "loaderPanel";
+            loaderPanel.Size = new Size(431, 381);
+            loaderPanel.TabIndex = 1;
             loaderPanel.Visible = false;
-            this.Controls.Add(loaderPanel);
             // 
             // loaderPictureBox
             // 
-            loaderPictureBox = new PictureBox();
-            loaderPictureBox.Size = new Size(50, 50);
-            loaderPictureBox.Location = new Point((this.ClientSize.Width - 50) / 2, (this.ClientSize.Height - 50) / 2); // Center the loader
+            loaderPictureBox.BackColor = Color.Transparent;
+            loaderPictureBox.Location = new Point(174, 114);
             loaderPictureBox.Name = "loaderPictureBox";
-            ((System.ComponentModel.ISupportInitialize)(loaderPictureBox)).BeginInit();
-            loaderPictureBox.BackColor = Color.Transparent; // Ensure PictureBox background is also transparent
-            ((System.ComponentModel.ISupportInitialize)(loaderPictureBox)).EndInit();
+            loaderPictureBox.Size = new Size(80, 80);
+            loaderPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+            loaderPictureBox.TabIndex = 0;
+            loaderPictureBox.TabStop = false;
             // 
             // loaderLabel
             // 
-            loaderLabel = new Label();
             loaderLabel.AutoSize = true;
+            loaderLabel.BackColor = Color.Transparent;
             loaderLabel.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
-            loaderLabel.ForeColor = Color.Black; // Already set to black for visibility
-            loaderLabel.Location = new Point((this.ClientSize.Width - 100) / 2, (this.ClientSize.Height - 50) / 2 + 60); // Position below loaderPictureBox
+            loaderLabel.ForeColor = Color.White;
+            loaderLabel.Location = new Point(164, 204);
             loaderLabel.Name = "loaderLabel";
+            loaderLabel.Size = new Size(127, 32);
+            loaderLabel.TabIndex = 1;
             loaderLabel.Text = "Loading...";
             loaderLabel.TextAlign = ContentAlignment.MiddleCenter;
-            loaderLabel.BackColor = Color.Transparent;
             // 
             // searchTextBox
             // 
@@ -312,7 +312,7 @@
             searchTextBox.Location = new Point(100, 41);
             searchTextBox.Name = "searchTextBox";
             searchTextBox.PlaceholderText = "Search...";
-            searchTextBox.Size = new Size(600, 32);
+            searchTextBox.Size = new Size(1180, 32);
             searchTextBox.TabIndex = 11;
             // 
             // searchButton
@@ -324,7 +324,7 @@
             searchButton.FlatStyle = FlatStyle.Flat;
             searchButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             searchButton.ForeColor = Color.White;
-            searchButton.Location = new Point(710, 41);
+            searchButton.Location = new Point(1290, 41);
             searchButton.Name = "searchButton";
             searchButton.Size = new Size(91, 35);
             searchButton.TabIndex = 12;
@@ -366,8 +366,10 @@
             PerformLayout();
         }
 
+        // Add new fields for search controls
         private TextBox searchTextBox;
         private Button searchButton;
+
         private PictureBox loaderPictureBox;
         private ListView clientsViewBox;
         private ComboBox projectComboBox;

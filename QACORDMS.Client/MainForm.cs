@@ -81,14 +81,14 @@ namespace QACORDMS.Client
             int y = (loaderPictureBox.Height - size) / 2;
             int thickness = 8; // Thickness of the circle
 
-            // Draw background circle (black)
-            using (Pen bgPen = new Pen(Color.Black, thickness))
+            // Draw background circle (optional, for contrast)
+            using (Pen bgPen = new Pen(Color.FromArgb(100, 255, 255, 255), thickness))
             {
                 g.DrawArc(bgPen, x, y, size, size, 0, 360);
             }
 
-            // Draw spinning arc (blue)
-            using (Pen arcPen = new Pen(Color.FromArgb(0, 102, 204), thickness)) // Using the same blue as your app theme
+            // Draw spinning arc
+            using (Pen arcPen = new Pen(Color.White, thickness))
             {
                 g.DrawArc(arcPen, x, y, size, size, _rotationAngle, 90);
             }
@@ -322,7 +322,7 @@ namespace QACORDMS.Client
 
                             listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
                             //listViewItem.SubItems.Add(item.Size + " KB");
-                            listViewItem.SubItems.Add(ConvertSize(item.Size * 1024));
+                            listViewItem.SubItems.Add(ConvertSize(item.Size));
 
                             listView1.Items.Add(listViewItem);
                         }
@@ -563,6 +563,7 @@ namespace QACORDMS.Client
                 ImageScalingSize = new Size(24, 24)
             };
 
+            // "New" submenu
             var newMenu = new ToolStripMenuItem("New");
             newMenu.DropDownItems.Add("Folder", null, async (s, e) => await CreateFolder_Click(s, e));
             newMenu.DropDownItems.Add("Text Document", null, async (s, e) => await CreateNewFile("txt", "Text Document"));
@@ -575,6 +576,17 @@ namespace QACORDMS.Client
 
             contextMenu.Items.Add(newMenu);
 
+            // Add "Upload File" menu item
+            var uploadFileContextItem = new ToolStripMenuItem("Upload File")
+            {
+                BackColor = Color.FromArgb(173, 216, 230),
+                Font = new Font("Segoe UI", 11F),
+                ForeColor = Color.FromArgb(0, 102, 204)
+            };
+            uploadFileContextItem.Click += UploadFileMenuItem_Click; // Reuse the existing click handler
+            contextMenu.Items.Add(uploadFileContextItem);
+
+            // Delete File menu item
             var deleteFileItem = new ToolStripMenuItem("Delete File");
             deleteFileItem.Click += async (s, e) => await DeleteFile_Click(s, e);
             contextMenu.Items.Add(deleteFileItem);
@@ -1040,13 +1052,6 @@ namespace QACORDMS.Client
             }
             else
             {
-                // Update loaderPanel size to match form size
-                loaderPanel.Size = new Size(this.ClientSize.Width, this.ClientSize.Height);
-
-                // Recenter loaderPictureBox and loaderLabel
-                loaderPictureBox.Location = new Point((this.ClientSize.Width - loaderPictureBox.Width) / 2, (this.ClientSize.Height - loaderPictureBox.Height) / 2);
-                loaderLabel.Location = new Point((this.ClientSize.Width - loaderLabel.Width) / 2, (this.ClientSize.Height - loaderPictureBox.Height) / 2 + 60);
-
                 loaderPanel.Visible = true;
                 loaderPanel.BringToFront();
                 _animationTimer.Start(); // Start the animation
@@ -1065,8 +1070,7 @@ namespace QACORDMS.Client
             else
             {
                 loaderPanel.Visible = false;
-                _animationTimer.Stop(); // Stop the animation
-                Application.DoEvents();
+                Application.DoEvents(); // Ensure the UI updates immediately
             }
         }
 
@@ -1101,14 +1105,6 @@ namespace QACORDMS.Client
         {
             base.OnResize(e);
             AdjustControlsLayout();
-
-            // Adjust loader position on resize
-            if (loaderPanel != null)
-            {
-                loaderPanel.Size = new Size(this.ClientSize.Width, this.ClientSize.Height);
-                loaderPictureBox.Location = new Point((this.ClientSize.Width - loaderPictureBox.Width) / 2, (this.ClientSize.Height - loaderPictureBox.Height) / 2);
-                loaderLabel.Location = new Point((this.ClientSize.Width - loaderLabel.Width) / 2, (this.ClientSize.Height - loaderPictureBox.Height) / 2 + 60);
-            }
         }
 
         private void AdjustControlsLayout()

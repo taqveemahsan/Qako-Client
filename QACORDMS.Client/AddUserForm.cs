@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace QACORDMS.Client
@@ -50,7 +52,10 @@ namespace QACORDMS.Client
                 // Validate that at least one role is selected
                 if (!selectedRoles.Any())
                 {
-                    MessageBox.Show("Please select at least one role.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Please select at least one role to proceed.",
+                        "Validation Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -61,30 +66,93 @@ namespace QACORDMS.Client
                     Username = txtUsername.Text,
                     Email = txtEmail.Text,
                     Password = txtPassword.Text,
-                    RoleNames = selectedRoles // Changed from RoleName to RoleNames
+                    RoleNames = selectedRoles
                 };
 
+                // Validate required fields
                 if (string.IsNullOrWhiteSpace(user.Email) ||
-                    string.IsNullOrWhiteSpace(user.Username) || string.IsNullOrWhiteSpace(user.Password))
+                    string.IsNullOrWhiteSpace(user.Username) ||
+                    string.IsNullOrWhiteSpace(user.Password))
                 {
-                    MessageBox.Show("Username, Email, and Password are required.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Username, Email, and Password are required. Please fill in all fields.",
+                        "Validation Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
                     return;
                 }
 
-                bool success = await _apiHelper.RegisterUserAsync(user);
-                if (success)
+                // Password validation using regex
+                string passwordPattern = @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?\:{}|<>]).{1,}$";
+                if (!Regex.IsMatch(user.Password, passwordPattern))
                 {
-                    MessageBox.Show("User registered successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Password must contain:\n- At least 1 uppercase letter\n- At least 1 lowercase letter\n- At least 1 number\n- At least 1 special character (e.g., !@#$%^&*())",
+                        "Invalid Password",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var response = await _apiHelper.RegisterUserAsync(user);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    MessageBox.Show($"🎉 User '{user.Username}' registered successfully! Welcome aboard! 🚀",
+                        "Success",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                     this.Close();
                 }
                 else
                 {
-                    MessageBox.Show("Failed to register user.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Try to read error details from the response
+                    string errorMessage = response.ReasonPhrase;
+                    try
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrEmpty(errorContent))
+                        {
+                            using var doc = JsonDocument.Parse(errorContent);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("message", out var messageElement))
+                            {
+                                errorMessage = messageElement.GetString();
+                            }
+                            else
+                            {
+                                errorMessage = $"API Error: {errorContent}";
+                            }
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        errorMessage = $"API Error (invalid response format): {errorMessage}";
+                    }
+                    catch
+                    {
+                        // Fallback to ReasonPhrase if content reading fails
+                    }
+
+                    if (errorMessage.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+                    {
+                        errorMessage = $"⚠️ A user with the username '{user.Username}' or email '{user.Email}' already exists. Please use a different username or email.";
+                    }
+                    else
+                    {
+                        errorMessage = $"Failed to register user: {errorMessage}";
+                    }
+
+                    MessageBox.Show(errorMessage,
+                        "Oops! Something Went Wrong",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Unexpected error: {ex.Message}. Please contact support if this persists.",
+                    "Critical Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
     }

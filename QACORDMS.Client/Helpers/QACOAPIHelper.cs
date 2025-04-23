@@ -116,18 +116,46 @@ namespace QACORDMS.Client.Helpers
             return await _httpClient.GetFromJsonAsync<Client>($"client/{id}");
         }
 
-        public async Task<bool> CreateClientAsync(Client client)
+        //public async Task<bool> CreateClientAsync(Client client)
+        //{
+        //    AddAuthorizationHeader();
+        //    try
+        //    {
+        //        var response = await _httpClient.PostAsJsonAsync("client/register", client);
+        //        response.EnsureSuccessStatusCode();
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        public async Task<HttpResponseMessage> CreateClientAsync(Client client)
         {
             AddAuthorizationHeader();
             try
             {
                 var response = await _httpClient.PostAsJsonAsync("client/register", client);
-                response.EnsureSuccessStatusCode();
-                return true;
+                return response; // Return the full HttpResponseMessage
+            }
+            catch (HttpRequestException ex)
+            {
+                // Wrap network-related errors in a response-like object
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    ReasonPhrase = $"Network error: {ex.Message}"
+                };
+                return errorResponse;
             }
             catch (Exception ex)
             {
-                return false;
+                // Wrap other unexpected errors
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                {
+                    ReasonPhrase = $"Unexpected error: {ex.Message}"
+                };
+                return errorResponse;
             }
         }
 
@@ -335,18 +363,31 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        public async Task<bool> RegisterUserAsync(User user)
+        public async Task<HttpResponseMessage> RegisterUserAsync(User user)
         {
             AddAuthorizationHeader();
             try
             {
                 var response = await _httpClient.PostAsJsonAsync("Auth/register", user);
-                response.EnsureSuccessStatusCode();
-                return true;
+                return response; // Return the full HttpResponseMessage
+            }
+            catch (HttpRequestException ex)
+            {
+                // Wrap network-related errors in a response-like object
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    ReasonPhrase = $"Network error: {ex.Message}"
+                };
+                return errorResponse;
             }
             catch (Exception ex)
             {
-                return false;
+                // Wrap other unexpected errors
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                {
+                    ReasonPhrase = $"Unexpected error: {ex.Message}"
+                };
+                return errorResponse;
             }
         }
 
