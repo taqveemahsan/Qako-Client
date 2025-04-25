@@ -12,8 +12,8 @@ namespace QACORDMS.Client.Helpers
 {
     public class QACOAPIHelper
     {
-        //private const string _BaseUrl = "https://localhost:44372/api/"; // Local
-        private const string _BaseUrl = "https://test.ibt-learning.com/api/"; // Prod
+        private const string _BaseUrl = "https://localhost:44372/api/"; // Local
+        //private const string _BaseUrl = "https://test.ibt-learning.com/api/"; // Prod
         private readonly HttpClient _httpClient;
 
         public QACOAPIHelper(HttpClient httpClient)
@@ -116,27 +116,12 @@ namespace QACORDMS.Client.Helpers
             return await _httpClient.GetFromJsonAsync<Client>($"client/{id}");
         }
 
-        //public async Task<bool> CreateClientAsync(Client client)
-        //{
-        //    AddAuthorizationHeader();
-        //    try
-        //    {
-        //        var response = await _httpClient.PostAsJsonAsync("client/register", client);
-        //        response.EnsureSuccessStatusCode();
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return false;
-        //    }
-        //}
-
         public async Task<HttpResponseMessage> CreateClientAsync(Client client)
         {
             AddAuthorizationHeader();
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("client/register", client);
+                var response = await _httpClient.PostAsJsonAsync("client/registerV1", client);
                 return response; // Return the full HttpResponseMessage
             }
             catch (HttpRequestException ex)
@@ -159,20 +144,99 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        public async Task<bool> UpdateClientAsync(Client client)
+        public async Task<bool> UpdateClientAsyncV1(Client client)
         {
             AddAuthorizationHeader();
             try
             {
-                var response = await _httpClient.PutAsJsonAsync("client", client);
-                response.EnsureSuccessStatusCode();
-                return true;
+                var response = await _httpClient.PostAsJsonAsync("Client/updateClient", client);
+                return true; // Return the full HttpResponseMessage
+            }
+            catch (HttpRequestException ex)
+            {
+                // Wrap network-related errors in a response-like object
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    ReasonPhrase = $"Network error: {ex.Message}"
+                };
+                return false;
             }
             catch (Exception ex)
             {
+                // Wrap other unexpected errors
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                {
+                    ReasonPhrase = $"Unexpected error: {ex.Message}"
+                };
                 return false;
             }
         }
+
+        public async Task<bool> UpdateClientAsync(ClientDto client)
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                // Configure JSON serialization options
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                    WriteIndented = true,
+                    Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(null, false) }
+                };
+
+                // Serialize the client object to JSON
+                var jsonContent = new StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(client, jsonOptions),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+
+                // Log the JSON for debugging
+                string jsonString = await jsonContent.ReadAsStringAsync();
+                Console.WriteLine($"Request JSON: {jsonString}");
+
+                // Make the POST request
+                var response = await _httpClient.PostAsync("Client/updateClient", jsonContent);
+
+                // Check the response
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP Error: {response.StatusCode}, Content: {errorContent}");
+                    return false;
+                }
+
+                response.EnsureSuccessStatusCode();
+                return true;
+            }
+            catch (HttpRequestException ex)
+            {
+                string errorContent = ex.Message;
+                Console.WriteLine($"HTTP Error: {ex.Message}, Details: {errorContent}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating client: {ex.Message}");
+                return false;
+            }
+        }
+
+        //public async Task<bool> UpdateClientAsync(Client client)
+        //{
+        //    AddAuthorizationHeader();
+        //    try
+        //    {
+        //        var response = await _httpClient.PostAsJsonAsync("updateClient", client);
+        //        response.EnsureSuccessStatusCode();
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return false;
+        //    }
+        //}
 
         //public async Task<bool> DeleteClientAsync(Guid id)
         //{

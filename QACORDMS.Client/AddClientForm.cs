@@ -110,27 +110,6 @@ namespace QACORDMS.Client
             }
         }
 
-        //private async void addButton_Click(object sender, EventArgs e)
-        //{
-        //    if (string.IsNullOrEmpty(nameTextBox.Text))
-        //    {
-        //        MessageBox.Show("Name is required.");
-        //        return;
-        //    }
-
-        //    var newClient = new Helpers.Client
-        //    {
-        //        Name = nameTextBox.Text,
-        //        Email = emailTextBox.Text,
-        //        Phone = phoneTextBox.Text,
-        //        Address = addressTextBox.Text,
-        //        CompanyType = (CompanyType)companyTypeComboBox.SelectedIndex
-        //    };
-
-        //    await _apiHelper.CreateClientAsync(newClient);
-        //    MessageBox.Show("Client added successfully!");
-        //    this.Close();
-        //}
 
         private void nameTextBox_Paint(object sender, PaintEventArgs e)
         {

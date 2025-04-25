@@ -109,6 +109,29 @@
             projectComboBox.Size = new Size(1337, 36);
             projectComboBox.TabIndex = 1;
             projectComboBox.SelectedIndexChanged += ProjectComboBox_SelectedIndexChanged;
+            //// 
+            //// listView1
+            //// 
+            //listView1.Alignment = ListViewAlignment.SnapToGrid;
+            //listView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            //listView1.BackColor = Color.White;
+            //listView1.BorderStyle = BorderStyle.None;
+            //listView1.ContextMenuStrip = NewFolder;
+            //listView1.Font = new Font("Segoe UI", 9F);
+            //listView1.ForeColor = Color.Black;
+            //listView1.FullRowSelect = true;
+            //listView1.LargeImageList = imageList1;
+            //listView1.Location = new Point(305, 154);
+            //listView1.Name = "listView1";
+            //listView1.Size = new Size(1270, 786);
+            //listView1.SmallImageList = imageList1;
+            //listView1.StateImageList = imageList1;
+            //listView1.TabIndex = 3;
+            //listView1.UseCompatibleStateImageBehavior = false;
+            //listView1.View = View.Details;
+            //listView1.ColumnClick += ListView1_ColumnClick;
+            //listView1.DoubleClick += ListView1_DoubleClick;
+            //listView1.MouseClick += listView1_MouseClick;
             // 
             // listView1
             // 
@@ -129,6 +152,15 @@
             listView1.TabIndex = 3;
             listView1.UseCompatibleStateImageBehavior = false;
             listView1.View = View.Details;
+            // Add existing columns
+            listView1.Columns.Add("Name", 400);
+            listView1.Columns.Add("Type", 200);
+            listView1.Columns.Add("Size", 150);
+            // Add new columns
+            listView1.Columns.Add("Date Created", 150);    // New column
+            listView1.Columns.Add("Created By", 150);      // New column
+            listView1.Columns.Add("Date Modified", 150);   // New column
+            listView1.Columns.Add("Last Modified By", 150); // New column
             listView1.ColumnClick += ListView1_ColumnClick;
             listView1.DoubleClick += ListView1_DoubleClick;
             listView1.MouseClick += listView1_MouseClick;
