@@ -10,7 +10,7 @@
             uploadFileMenuItem = new ToolStripMenuItem();
             settingsMenuItem = new ToolStripMenuItem();
             addUserMenuItem = new ToolStripMenuItem();
-            clientsViewBox = new ListView();
+            clientsViewBox = new TreeView();
             projectComboBox = new ComboBox();
             listView1 = new ListView();
             NewFolder = new ContextMenuStrip(components);
@@ -81,19 +81,16 @@
             // 
             // clientsViewBox
             // 
+            clientsViewBox = new TreeView();
             clientsViewBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             clientsViewBox.BackColor = Color.White;
             clientsViewBox.Font = new Font("Segoe UI", 11F);
             clientsViewBox.ForeColor = Color.Black;
-            clientsViewBox.FullRowSelect = true;
-            clientsViewBox.HeaderStyle = ColumnHeaderStyle.None;
             clientsViewBox.Location = new Point(15, 154);
             clientsViewBox.Name = "clientsViewBox";
             clientsViewBox.Size = new Size(280, 786);
             clientsViewBox.TabIndex = 2;
-            clientsViewBox.UseCompatibleStateImageBehavior = false;
-            clientsViewBox.View = View.Details;
-            clientsViewBox.SelectedIndexChanged += ClientsViewBox_SelectedIndexChanged;
+            clientsViewBox.AfterSelect += ClientsViewBox_AfterSelect; // Replace SelectedIndexChanged with AfterSelect for TreeView
             clientsViewBox.DoubleClick += ClientsViewBox_DoubleClick;
             // 
             // projectComboBox
@@ -403,7 +400,7 @@
         private Button searchButton;
 
         private PictureBox loaderPictureBox;
-        private ListView clientsViewBox;
+        private TreeView clientsViewBox;
         private ComboBox projectComboBox;
         private ListView listView1;
         private ContextMenuStrip NewFolder;

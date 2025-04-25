@@ -52,10 +52,9 @@ namespace QACORDMS.Client
             // Set Paint event for custom drawing
             loaderPictureBox.Paint += LoaderPictureBox_Paint;
 
-            clientsViewBox.Columns.Add("Client Name", 260);
-            listView1.Columns.Add("Name", 400);
-            listView1.Columns.Add("Type", 200);
-            listView1.Columns.Add("Size", 150);
+            //listView1.Columns.Add("Name", 400);
+            //listView1.Columns.Add("Type", 200);
+            //listView1.Columns.Add("Size", 150);
 
             LoadClientsAsync();
 
@@ -196,14 +195,40 @@ namespace QACORDMS.Client
             }
             else
             {
-                clientsViewBox.Items.Clear();
-                foreach (var client in clientsToDisplay)
+                clientsViewBox.Nodes.Clear();
+
+                var groupedClients = clientsToDisplay
+                    .GroupBy(c => c.CompanyType)
+                    .OrderBy(g => g.Key);
+
+                foreach (var group in groupedClients)
                 {
-                    var item = new ListViewItem(client.Name) { Tag = client };
-                    clientsViewBox.Items.Add(item);
+                    string companyTypeName = Enum.GetName(typeof(CompanyType), group.Key);
+                    var companyNode = new TreeNode(companyTypeName)
+                    {
+                        Tag = group.Key
+                    };
+
+                    foreach (var client in group.OrderBy(c => c.Name))
+                    {
+                        var clientNode = new TreeNode(client.Name)
+                        {
+                            Tag = client
+                        };
+                        companyNode.Nodes.Add(clientNode);
+                    }
+
+                    clientsViewBox.Nodes.Add(companyNode);
                 }
-                if (clientsViewBox.Items.Count > 0)
-                    clientsViewBox.Items[0].Selected = true;
+
+                if (clientsViewBox.Nodes.Count > 0)
+                {
+                    clientsViewBox.Nodes[0].Expand();
+                    if (clientsViewBox.Nodes[0].Nodes.Count > 0)
+                    {
+                        clientsViewBox.SelectedNode = clientsViewBox.Nodes[0].Nodes[0];
+                    }
+                }
             }
         }
 
@@ -251,18 +276,16 @@ namespace QACORDMS.Client
             });
         }
 
-        private async void ClientsViewBox_SelectedIndexChanged(object sender, EventArgs e)
+        private async void ClientsViewBox_AfterSelect(object sender, TreeViewEventArgs e)
         {
             await RunWithLoader(async () =>
             {
                 try
                 {
-                    if (clientsViewBox.SelectedItems.Count == 0) return;
-
-                    var selectedItem = clientsViewBox.SelectedItems[0];
-                    _selectedClient = (Helpers.Client)selectedItem.Tag;
-                    if (_selectedClient != null)
+                    // Only proceed if a client node (not a group node) is selected
+                    if (e.Node.Tag is Helpers.Client selectedClient)
                     {
+                        _selectedClient = selectedClient;
                         UpdateStatusLabel($"Loading projects for {_selectedClient.Name}...");
                         _projects = await _apiHelper.GetClientProjectsAsync(_selectedClient.Id);
 
@@ -297,7 +320,10 @@ namespace QACORDMS.Client
 
         private void ClientsViewBox_DoubleClick(object sender, EventArgs e)
         {
-            ClientsViewBox_SelectedIndexChanged(sender, e);
+            if (clientsViewBox.SelectedNode != null)
+            {
+                ClientsViewBox_AfterSelect(sender, new TreeViewEventArgs(clientsViewBox.SelectedNode));
+            }
         }
 
         private async void ProjectComboBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -654,10 +680,20 @@ namespace QACORDMS.Client
                 ImageScalingSize = new Size(24, 24)
             };
 
-            // Add Rename menu item for clientsViewBox
-            var renameClientItem = new ToolStripMenuItem("Rename");
-            renameClientItem.Click += async (s, e) => await RenameClient_Click(s, e);
-            contextMenu.Items.Add(renameClientItem);
+            // Add Rename menu item for clientsViewBox (only show for client nodes)
+            contextMenu.Opening += (sender, e) =>
+            {
+                var menu = sender as ContextMenuStrip;
+                menu.Items.Clear();
+
+                // Only show the Rename option if a client node is selected
+                if (clientsViewBox.SelectedNode?.Tag is Helpers.Client)
+                {
+                    var renameClientItem = new ToolStripMenuItem("Rename");
+                    renameClientItem.Click += async (s, e) => await RenameClient_Click(s, e);
+                    menu.Items.Add(renameClientItem);
+                }
+            };
 
             return contextMenu;
         }
@@ -806,14 +842,14 @@ namespace QACORDMS.Client
 
         private async Task RenameClient_Click(object sender, EventArgs e)
         {
-            if (clientsViewBox.SelectedItems.Count == 0)
+            if (clientsViewBox.SelectedNode == null || !(clientsViewBox.SelectedNode.Tag is Helpers.Client))
             {
                 MessageBox.Show("Please select a client to rename.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var selectedItem = clientsViewBox.SelectedItems[0];
-            var client = selectedItem.Tag as Helpers.Client;
+            var selectedNode = clientsViewBox.SelectedNode;
+            var client = selectedNode.Tag as Helpers.Client;
             if (client == null || client.Id == Guid.Empty)
             {
                 MessageBox.Show("Invalid client selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -840,7 +876,6 @@ namespace QACORDMS.Client
                         Phone = ""
                     };
 
-                    // Assuming the API helper has a method to rename a client
                     await _apiHelper.UpdateClientAsync(clientUpdate);
 
                     // Update the local client list
@@ -857,8 +892,9 @@ namespace QACORDMS.Client
                         filteredClientToUpdate.Name = newName;
                     }
 
-                    // Refresh the clientsViewBox
-                    UpdateClientsViewBox(_filteredClients);
+                    // Update the node's text
+                    selectedNode.Text = newName;
+
                     UpdateStatusLabel($"Client renamed to '{newName}' successfully.");
                     MessageBox.Show($"Client renamed to '{newName}' successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
