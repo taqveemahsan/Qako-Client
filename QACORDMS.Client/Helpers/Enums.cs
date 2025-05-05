@@ -20,6 +20,7 @@ namespace QACORDMS.Client.Helpers
         IndividualsSoleProprietors = 9,
         Others = 10
     }
+
     public enum ProjectType
     {
         Tax = 1,

@@ -36,7 +36,6 @@
             dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
             deleteButtonColumn = new DataGridViewButtonColumn();
-            //dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
             addUserButton = new Button();
             txtSearch = new TextBox();
             btnSearch = new Button();
@@ -45,9 +44,8 @@
             lblPageInfo = new Label();
             ((System.ComponentModel.ISupportInitialize)usersGridView).BeginInit();
             SuspendLayout();
-            // 
+
             // usersGridView
-            // 
             usersGridView.BackgroundColor = Color.White;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = Color.FromArgb(0, 102, 204);
@@ -73,33 +71,33 @@
             usersGridView.Name = "usersGridView";
             usersGridView.RowHeadersVisible = false;
             usersGridView.RowHeadersWidth = 51;
-            usersGridView.Size = new Size(980, 514);
+            usersGridView.Size = new Size(980, 514); // Initial size
+            usersGridView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom; // Stretch with form
             usersGridView.TabIndex = 0;
             usersGridView.CellContentClick += usersGridView_CellContentClick;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
+
+            // dataGridViewTextBoxColumn2 (Email)
             dataGridViewTextBoxColumn2.HeaderText = "Email";
             dataGridViewTextBoxColumn2.MinimumWidth = 6;
             dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
             dataGridViewTextBoxColumn2.Width = 300;
-            // 
-            // dataGridViewTextBoxColumn3
-            // 
+            dataGridViewTextBoxColumn2.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill; // Stretch to fill available space
+
+            // dataGridViewTextBoxColumn3 (Username)
             dataGridViewTextBoxColumn3.HeaderText = "Username";
             dataGridViewTextBoxColumn3.MinimumWidth = 6;
             dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
             dataGridViewTextBoxColumn3.Width = 200;
-            // 
-            // dataGridViewTextBoxColumn4
-            // 
+            dataGridViewTextBoxColumn3.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+            // dataGridViewTextBoxColumn4 (Roles)
             dataGridViewTextBoxColumn4.HeaderText = "Roles";
             dataGridViewTextBoxColumn4.MinimumWidth = 6;
             dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
             dataGridViewTextBoxColumn4.Width = 200;
-            // 
+            dataGridViewTextBoxColumn4.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
             // deleteButtonColumn
-            // 
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle2.BackColor = Color.FromArgb(245, 245, 245);
             deleteButtonColumn.DefaultCellStyle = dataGridViewCellStyle2;
@@ -109,16 +107,9 @@
             deleteButtonColumn.Text = "Delete";
             deleteButtonColumn.UseColumnTextForButtonValue = true;
             deleteButtonColumn.Width = 125;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            //dataGridViewTextBoxColumn1.HeaderText = "Full Name";
-            //dataGridViewTextBoxColumn1.MinimumWidth = 6;
-            //dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            //dataGridViewTextBoxColumn1.Width = 250;
-            // 
+            deleteButtonColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // Fixed width for action button
+
             // addUserButton
-            // 
             addUserButton.BackColor = Color.FromArgb(0, 102, 204);
             addUserButton.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
             addUserButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
@@ -128,13 +119,13 @@
             addUserButton.Location = new Point(886, 610);
             addUserButton.Name = "addUserButton";
             addUserButton.Size = new Size(134, 48);
+            addUserButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right; // Stick to bottom-right
             addUserButton.TabIndex = 3;
             addUserButton.Text = "Add User";
             addUserButton.UseVisualStyleBackColor = false;
             addUserButton.Click += addUserButton_Click;
-            // 
+
             // txtSearch
-            // 
             txtSearch.BackColor = Color.FromArgb(245, 245, 245);
             txtSearch.BorderStyle = BorderStyle.FixedSingle;
             txtSearch.Font = new Font("Segoe UI", 12F);
@@ -142,10 +133,10 @@
             txtSearch.Name = "txtSearch";
             txtSearch.PlaceholderText = "Search by name, email, or username";
             txtSearch.Size = new Size(377, 34);
+            txtSearch.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right; // Stretch horizontally
             txtSearch.TabIndex = 1;
-            // 
+
             // btnSearch
-            // 
             btnSearch.BackColor = Color.FromArgb(0, 102, 204);
             btnSearch.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
             btnSearch.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
@@ -155,13 +146,13 @@
             btnSearch.Location = new Point(423, 41);
             btnSearch.Name = "btnSearch";
             btnSearch.Size = new Size(100, 35);
+            btnSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right; // Stick to top-right
             btnSearch.TabIndex = 2;
             btnSearch.Text = "Search";
             btnSearch.UseVisualStyleBackColor = false;
             btnSearch.Click += btnSearch_Click;
-            // 
+
             // btnPrevious
-            // 
             btnPrevious.BackColor = Color.FromArgb(0, 102, 204);
             btnPrevious.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
             btnPrevious.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
@@ -171,13 +162,13 @@
             btnPrevious.Location = new Point(40, 610);
             btnPrevious.Name = "btnPrevious";
             btnPrevious.Size = new Size(100, 40);
+            btnPrevious.Anchor = AnchorStyles.Bottom | AnchorStyles.Left; // Stick to bottom-left
             btnPrevious.TabIndex = 4;
             btnPrevious.Text = "Previous";
             btnPrevious.UseVisualStyleBackColor = false;
             btnPrevious.Click += btnPrevious_Click;
-            // 
+
             // btnNext
-            // 
             btnNext.BackColor = Color.FromArgb(0, 102, 204);
             btnNext.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
             btnNext.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
@@ -187,24 +178,24 @@
             btnNext.Location = new Point(150, 610);
             btnNext.Name = "btnNext";
             btnNext.Size = new Size(100, 40);
+            btnNext.Anchor = AnchorStyles.Bottom | AnchorStyles.Left; // Stick to bottom-left
             btnNext.TabIndex = 5;
             btnNext.Text = "Next";
             btnNext.UseVisualStyleBackColor = false;
             btnNext.Click += btnNext_Click;
-            // 
+
             // lblPageInfo
-            // 
             lblPageInfo.Font = new Font("Segoe UI", 12F);
             lblPageInfo.ForeColor = Color.FromArgb(0, 102, 204);
             lblPageInfo.Location = new Point(260, 610);
             lblPageInfo.Name = "lblPageInfo";
             lblPageInfo.Size = new Size(200, 40);
+            lblPageInfo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left; // Stick to bottom-left
             lblPageInfo.TabIndex = 6;
             lblPageInfo.Text = "Page 1 of 1";
             lblPageInfo.TextAlign = ContentAlignment.MiddleLeft;
-            // 
+
             // UserForm
-            // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(173, 216, 230);
@@ -218,6 +209,7 @@
             Controls.Add(usersGridView);
             Name = "UserForm";
             Text = "Users Management";
+            MinimumSize = new Size(800, 600); // Set a minimum size to prevent the form from becoming too small
             ((System.ComponentModel.ISupportInitialize)usersGridView).EndInit();
             ResumeLayout(false);
             PerformLayout();

@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 
@@ -34,11 +35,27 @@ namespace QACORDMS.Client
         private int _rotationAngle = 0;
         private System.Windows.Forms.Timer _animationTimer;
 
+        private const int HDM_GETITEM = 0x1203; // HDM_GETITEMW
+        private const int HDM_SETITEM = 0x1204; // HDM_SETITEMW
+        private const int HDF_SORTUP = 0x0400;
+        private const int HDF_SORTDOWN = 0x0200;
+        private const int HDI_TEXT = 0x0002;
+        private const int HDI_FORMAT = 0x0004;
+        private const int HDF_LEFT = 0x0000;
+        private const int HDF_CENTER = 0x0002;
+        private const int HDF_RIGHT = 0x0001;
+
+        private List<Image> _loadingFrames;
+        private readonly HashSet<string> _createdFolders = new HashSet<string>();
+
+
         public MainForm(QACOAPIHelper apiHelper, string userRole = null)
         {
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             _userRole = userRole;
             InitializeComponent();
+
+            //LoadAnimationFrames();
 
             // Initialize animation timer for custom loader
             _animationTimer = new System.Windows.Forms.Timer();
@@ -50,7 +67,7 @@ namespace QACORDMS.Client
             };
 
             // Set Paint event for custom drawing
-            loaderPictureBox.Paint += LoaderPictureBox_Paint;
+            //loaderPictureBox.Paint += LoaderPictureBox_Paint;
 
             //listView1.Columns.Add("Name", 400);
             //listView1.Columns.Add("Type", 200);
@@ -82,7 +99,32 @@ namespace QACORDMS.Client
 
             WindowState = FormWindowState.Maximized;
             CustomizeUIForRole();
+
+            CenterLoaderControls();
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct HDITEM
+        {
+            public int mask;
+            public int cxy;
+            public IntPtr pszText;
+            public IntPtr hbm;
+            public int cchTextMax;
+            public int fmt;
+            public IntPtr lParam;
+            public int iImage;
+            public int iOrder;
+            public uint type;
+            public IntPtr pvFilter;
+            public uint state;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, ref HDITEM lParam);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetDlgItem(IntPtr hDlg, int nIDDlgItem);
 
         private void LoaderPictureBox_Paint(object sender, PaintEventArgs e)
         {
@@ -132,20 +174,94 @@ namespace QACORDMS.Client
             }
         }
 
+        //private void ListView1_ColumnClick(object sender, ColumnClickEventArgs e)
+        //{
+        //    if (e.Column == sortColumn)
+        //    {
+        //        sortOrder = (sortOrder == SortOrder.Ascending) ? SortOrder.Descending : SortOrder.Ascending;
+        //    }
+        //    else
+        //    {
+        //        sortColumn = e.Column;
+        //        sortOrder = SortOrder.Ascending;
+        //    }
+
+        //    listView1.ListViewItemSorter = new ListViewItemComparer(e.Column, sortOrder);
+        //    listView1.Sort();
+        //}
+
         private void ListView1_ColumnClick(object sender, ColumnClickEventArgs e)
         {
+            // Determine the new sort direction
             if (e.Column == sortColumn)
             {
                 sortOrder = (sortOrder == SortOrder.Ascending) ? SortOrder.Descending : SortOrder.Ascending;
             }
             else
             {
+                // Clear the sort arrow from the previous column
+                if (sortColumn != -1)
+                {
+                    SetSortArrow(sortColumn, SortOrder.None);
+                }
                 sortColumn = e.Column;
                 sortOrder = SortOrder.Ascending;
             }
 
+            // Set the sort arrow on the current column
+            SetSortArrow(sortColumn, sortOrder);
+
+            // Perform the sort
             listView1.ListViewItemSorter = new ListViewItemComparer(e.Column, sortOrder);
             listView1.Sort();
+        }
+
+        private void SetSortArrow(int columnIndex, SortOrder sortOrder)
+        {
+            // Get the handle to the ListView's header control
+            IntPtr header = GetDlgItem(listView1.Handle, 0); // 0 gets the header control
+
+            // Initialize HDITEM to retrieve the current header item's text and format
+            HDITEM hdItem = new HDITEM
+            {
+                mask = HDI_TEXT | HDI_FORMAT, // Request text and format
+                pszText = Marshal.AllocHGlobal(260 * sizeof(char)), // Allocate buffer for text (MAX_PATH = 260)
+                cchTextMax = 260,
+                fmt = 0
+            };
+
+            try
+            {
+                // Retrieve the current header item (including text and format)
+                SendMessage(header, HDM_GETITEM, (IntPtr)columnIndex, ref hdItem);
+
+                // Preserve the existing format (e.g., alignment) and only modify the sort arrow
+                hdItem.mask = HDI_FORMAT; // We’re updating the format
+                hdItem.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN); // Clear existing sort arrows
+                hdItem.fmt |= sortOrder switch
+                {
+                    SortOrder.Ascending => HDF_SORTUP,
+                    SortOrder.Descending => HDF_SORTDOWN,
+                    _ => 0
+                };
+
+                // Ensure text alignment is preserved (optional, in case alignment was lost)
+                if ((hdItem.fmt & HDF_LEFT) == 0 && (hdItem.fmt & HDF_RIGHT) == 0 && (hdItem.fmt & HDF_CENTER) == 0)
+                {
+                    hdItem.fmt |= HDF_LEFT; // Default to left alignment if none is set
+                }
+
+                // Apply the updated header item with the sort arrow
+                SendMessage(header, HDM_SETITEM, (IntPtr)columnIndex, ref hdItem);
+            }
+            finally
+            {
+                // Free the allocated memory for pszText
+                if (hdItem.pszText != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(hdItem.pszText);
+                }
+            }
         }
 
         private async void LoadClientsAsync()
@@ -187,6 +303,35 @@ namespace QACORDMS.Client
             });
         }
 
+        private string FormatCompanyTypeName(string enumName)
+        {
+            // Custom mappings for specific enum values that don't split nicely
+            var customMappings = new Dictionary<string, string>
+            {
+                { "PrivateLable", "Private Label" },
+                { "PublicComp", "Public Company" },
+                { "ForeignCompanies", "Foreign Companies" },
+                { "PartnershipFirms", "Partnership Firms" },
+                { "NonProfitOrganizations", "Non-Profit Organizations" },
+                { "NBFC", "NBFC" }, // Keep as-is since it's an acronym
+                { "PICS", "PICS" }, // Keep as-is since it's an acronym
+                { "ProvidentGratuityFunds", "Provident & Gratuity Funds" },
+                { "IndividualsSoleProprietors", "Individuals & Sole Proprietors" },
+                { "Others", "Others" }
+            };
+
+            // If the enum name has a custom mapping, return it
+            if (customMappings.TryGetValue(enumName, out var formattedName))
+            {
+                return formattedName;
+            }
+
+            // Fallback: Split camel-case names and join with spaces
+            // e.g., "ThisIsATest" -> "This Is A Test"
+            var result = System.Text.RegularExpressions.Regex.Replace(enumName, "([a-z])([A-Z])", "$1 $2");
+            return result;
+        }
+
         private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
         {
             if (clientsViewBox.InvokeRequired)
@@ -204,9 +349,10 @@ namespace QACORDMS.Client
                 foreach (var group in groupedClients)
                 {
                     string companyTypeName = Enum.GetName(typeof(CompanyType), group.Key);
-                    var companyNode = new TreeNode(companyTypeName)
+                    string formattedCompanyTypeName = FormatCompanyTypeName(companyTypeName); // Format the name
+                    var companyNode = new TreeNode(formattedCompanyTypeName)
                     {
-                        Tag = group.Key
+                        Tag = group.Key // Store the original CompanyType for reference
                     };
 
                     foreach (var client in group.OrderBy(c => c.Name))
@@ -231,6 +377,51 @@ namespace QACORDMS.Client
                 }
             }
         }
+
+        //private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
+        //{
+        //    if (clientsViewBox.InvokeRequired)
+        //    {
+        //        clientsViewBox.Invoke(new Action<List<Helpers.Client>>(UpdateClientsViewBox), clientsToDisplay);
+        //    }
+        //    else
+        //    {
+        //        clientsViewBox.Nodes.Clear();
+
+        //        var groupedClients = clientsToDisplay
+        //            .GroupBy(c => c.CompanyType)
+        //            .OrderBy(g => g.Key);
+
+        //        foreach (var group in groupedClients)
+        //        {
+        //            string companyTypeName = Enum.GetName(typeof(CompanyType), group.Key);
+        //            var companyNode = new TreeNode(companyTypeName)
+        //            {
+        //                Tag = group.Key
+        //            };
+
+        //            foreach (var client in group.OrderBy(c => c.Name))
+        //            {
+        //                var clientNode = new TreeNode(client.Name)
+        //                {
+        //                    Tag = client
+        //                };
+        //                companyNode.Nodes.Add(clientNode);
+        //            }
+
+        //            clientsViewBox.Nodes.Add(companyNode);
+        //        }
+
+        //        if (clientsViewBox.Nodes.Count > 0)
+        //        {
+        //            clientsViewBox.Nodes[0].Expand();
+        //            if (clientsViewBox.Nodes[0].Nodes.Count > 0)
+        //            {
+        //                clientsViewBox.SelectedNode = clientsViewBox.Nodes[0].Nodes[0];
+        //            }
+        //        }
+        //    }
+        //}
 
         private async void SearchButton_Click(object sender, EventArgs e)
         {
@@ -355,7 +546,6 @@ namespace QACORDMS.Client
                 }
             });
         }
-
         private async Task LoadFolderContents(string folderId)
         {
             try
@@ -370,6 +560,7 @@ namespace QACORDMS.Client
 
                         foreach (var item in driveItems)
                         {
+                            // Load thumbnail if available and not already in imageList1
                             if (!string.IsNullOrEmpty(item.ThumbnailLink) && !imageList1.Images.ContainsKey(item.MimeType ?? "Unknown"))
                             {
                                 try
@@ -390,6 +581,7 @@ namespace QACORDMS.Client
                                 }
                             }
 
+                            // Create the ListViewItem with the Name column
                             var listViewItem = new ListViewItem(item.Name)
                             {
                                 ImageKey = item.MimeType ?? "Unknown",
@@ -397,12 +589,22 @@ namespace QACORDMS.Client
                                 Tag = item
                             };
 
-                            listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
-                            listViewItem.SubItems.Add(ConvertSize(item.Size));
+                            // Map the remaining columns
+                            listViewItem.SubItems.Add(item.IsFolder ? "Folder" : (item.FileExtension ?? "File")); // Type
+                            listViewItem.SubItems.Add(ConvertSize(item.Size)); // Size
+                            //listViewItem.SubItems.Add(item.CreatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"); // Date Created
+                            //listViewItem.SubItems.Add(item.CreatedBy?.ToString() ?? "N/A"); // Created By
+                            //listViewItem.SubItems.Add(item.ModifiedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"); // Date Modified
+                            //listViewItem.SubItems.Add(item.ModifiedBy?.ToString() ?? "N/A"); // Last Modified By
+                            listViewItem.SubItems.Add(item.CreatedOn.HasValue && item.CreatedOn.Value > DateTime.MinValue ? item.CreatedOn.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""); // Date Created
+                            listViewItem.SubItems.Add(string.IsNullOrEmpty(item.CreatedBy) || item.CreatedBy == Guid.Empty.ToString() ? "" : item.CreatedBy); // Created By
+                            listViewItem.SubItems.Add(item.ModifiedOn.HasValue && item.ModifiedOn.Value > DateTime.MinValue ? item.ModifiedOn.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""); // Date Modified
+                            listViewItem.SubItems.Add(string.IsNullOrEmpty(item.ModifiedBy) || item.ModifiedBy == Guid.Empty.ToString() ? "" : item.ModifiedBy); // Last Modified By
 
                             listView1.Items.Add(listViewItem);
                         }
 
+                        // Position items if in LargeIcon or SmallIcon view
                         if (listView1.View == View.LargeIcon || listView1.View == View.SmallIcon)
                         {
                             int x = 10, y = 20;
@@ -425,6 +627,7 @@ namespace QACORDMS.Client
 
                     foreach (var item in driveItems)
                     {
+                        // Load thumbnail if available and not already in imageList1
                         if (!string.IsNullOrEmpty(item.ThumbnailLink) && !imageList1.Images.ContainsKey(item.MimeType ?? "Unknown"))
                         {
                             try
@@ -445,6 +648,7 @@ namespace QACORDMS.Client
                             }
                         }
 
+                        // Create the ListViewItem with the Name column
                         var listViewItem = new ListViewItem(item.Name)
                         {
                             ImageKey = item.MimeType ?? "Unknown",
@@ -452,12 +656,22 @@ namespace QACORDMS.Client
                             Tag = item
                         };
 
-                        listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
-                        listViewItem.SubItems.Add(ConvertSize(item.Size));
+                        // Map the remaining columns
+                        listViewItem.SubItems.Add(item.IsFolder ? "Folder" : (item.FileExtension ?? "File")); // Type
+                        listViewItem.SubItems.Add(ConvertSize(item.Size)); // Size
+                        //listViewItem.SubItems.Add(item.CreatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"); // Date Created
+                        //listViewItem.SubItems.Add(item.CreatedBy?.ToString() ?? "N/A"); // Created By
+                        //listViewItem.SubItems.Add(item.ModifiedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"); // Date Modified
+                        //listViewItem.SubItems.Add(item.ModifiedBy?.ToString() ?? "N/A"); // Last Modified By
+                        listViewItem.SubItems.Add(item.CreatedOn.HasValue && item.CreatedOn.Value > DateTime.MinValue ? item.CreatedOn.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""); // Date Created
+                        listViewItem.SubItems.Add(string.IsNullOrEmpty(item.CreatedBy) || (item.CreatedBy != null && item.CreatedBy.ToLower() == Guid.Empty.ToString().ToLower()) ? "" : item.CreatedBy); // Created By
+                        listViewItem.SubItems.Add(item.ModifiedOn.HasValue && item.ModifiedOn.Value > DateTime.MinValue ? item.ModifiedOn.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""); // Date Modified
+                        listViewItem.SubItems.Add(string.IsNullOrEmpty(item.ModifiedBy) || (item.ModifiedBy != null && item.ModifiedBy.ToLower() == Guid.Empty.ToString().ToLower()) ? "" : item.ModifiedBy); // Last Modified By
 
                         listView1.Items.Add(listViewItem);
                     }
 
+                    // Position items if in LargeIcon or SmallIcon view
                     if (listView1.View == View.LargeIcon || listView1.View == View.SmallIcon)
                     {
                         int x = 10, y = 20;
@@ -482,6 +696,136 @@ namespace QACORDMS.Client
                 UpdateStatusLabel("Error loading folder contents.");
             }
         }
+        //private async Task LoadFolderContents(string folderId)
+        //{
+        //    try
+        //    {
+        //        var driveItems = await _apiHelper.GetGoogleDriveFilesAsync(folderId);
+
+        //        if (listView1.InvokeRequired)
+        //        {
+        //            listView1.Invoke(new Action(() =>
+        //            {
+        //                listView1.Items.Clear();
+
+        //                foreach (var item in driveItems)
+        //                {
+        //                    if (!string.IsNullOrEmpty(item.ThumbnailLink) && !imageList1.Images.ContainsKey(item.MimeType ?? "Unknown"))
+        //                    {
+        //                        try
+        //                        {
+        //                            using (var client = new HttpClient())
+        //                            {
+        //                                var imageData = client.GetByteArrayAsync(item.ThumbnailLink).Result;
+        //                                using (var ms = new MemoryStream(imageData))
+        //                                {
+        //                                    var thumbnail = Image.FromStream(ms);
+        //                                    imageList1.Images.Add(item.MimeType ?? "Unknown", thumbnail);
+        //                                }
+        //                            }
+        //                        }
+        //                        catch (Exception ex)
+        //                        {
+        //                            Console.WriteLine($"Failed to load thumbnail for {item.Name}: {ex.Message}");
+        //                        }
+        //                    }
+
+        //                    var listViewItem = new ListViewItem(item.Name)
+        //                    {
+        //                        ImageKey = item.MimeType ?? "Unknown",
+        //                        ImageIndex = imageList1.Images.IndexOfKey(item.MimeType ?? "Unknown"),
+        //                        Tag = item
+        //                    };
+
+        //                    listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
+        //                    listViewItem.SubItems.Add(ConvertSize(item.Size));
+
+        //                    listView1.Items.Add(listViewItem);
+        //                }
+
+        //                if (listView1.View == View.LargeIcon || listView1.View == View.SmallIcon)
+        //                {
+        //                    int x = 10, y = 20;
+        //                    foreach (ListViewItem item in listView1.Items)
+        //                    {
+        //                        item.Position = new Point(x, y);
+        //                        x += 150;
+        //                        if (x > listView1.Width - 150)
+        //                        {
+        //                            x = 10;
+        //                            y += 150;
+        //                        }
+        //                    }
+        //                }
+        //            }));
+        //        }
+        //        else
+        //        {
+        //            listView1.Items.Clear();
+
+        //            foreach (var item in driveItems)
+        //            {
+        //                if (!string.IsNullOrEmpty(item.ThumbnailLink) && !imageList1.Images.ContainsKey(item.MimeType ?? "Unknown"))
+        //                {
+        //                    try
+        //                    {
+        //                        using (var client = new HttpClient())
+        //                        {
+        //                            var imageData = await client.GetByteArrayAsync(item.ThumbnailLink);
+        //                            using (var ms = new MemoryStream(imageData))
+        //                            {
+        //                                var thumbnail = Image.FromStream(ms);
+        //                                imageList1.Images.Add(item.MimeType ?? "Unknown", thumbnail);
+        //                            }
+        //                        }
+        //                    }
+        //                    catch (Exception ex)
+        //                    {
+        //                        Console.WriteLine($"Failed to load thumbnail for {item.Name}: {ex.Message}");
+        //                    }
+        //                }
+
+        //                var listViewItem = new ListViewItem(item.Name)
+        //                {
+        //                    ImageKey = item.MimeType ?? "Unknown",
+        //                    ImageIndex = imageList1.Images.IndexOfKey(item.MimeType ?? "Unknown"),
+        //                    Tag = item
+        //                };
+
+        //                listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
+        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
+        //                listViewItem.SubItems.Add(item.CreatedOn);
+        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
+        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
+        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
+
+        //                listView1.Items.Add(listViewItem);
+        //            }
+
+        //            if (listView1.View == View.LargeIcon || listView1.View == View.SmallIcon)
+        //            {
+        //                int x = 10, y = 20;
+        //                foreach (ListViewItem item in listView1.Items)
+        //                {
+        //                    item.Position = new Point(x, y);
+        //                    x += 150;
+        //                    if (x > listView1.Width - 150)
+        //                    {
+        //                        x = 10;
+        //                        y += 150;
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        UpdateStatusLabel($"Loaded {driveItems.Count} items.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Failed to load folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        UpdateStatusLabel("Error loading folder contents.");
+        //    }
+        //}
 
         private async void BackMenuItem_Click(object sender, EventArgs e)
         {
@@ -587,9 +931,19 @@ namespace QACORDMS.Client
             }
         }
 
-        private async void ListView1_DragEnter(object sender, DragEventArgs e)
+        private void ListView1_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop) && !string.IsNullOrEmpty(_selectedProject?.GoogleDriveFolderId))
+            bool hasFileDrop = e.Data.GetDataPresent(DataFormats.FileDrop);
+            bool hasValidProject = !string.IsNullOrEmpty(_selectedProject?.GoogleDriveFolderId);
+
+            UpdateStatusLabel($"DragEnter: HasFileDrop={hasFileDrop}, HasValidProject={hasValidProject}");
+
+            if (!hasValidProject)
+            {
+                UpdateStatusLabel("Please select a project before dragging files.");
+            }
+
+            if (hasFileDrop && hasValidProject)
                 e.Effect = DragDropEffects.Copy;
             else
                 e.Effect = DragDropEffects.None;
@@ -597,36 +951,123 @@ namespace QACORDMS.Client
 
         private async void ListView1_DragDrop(object sender, DragEventArgs e)
         {
-            if (string.IsNullOrEmpty(_selectedProject?.GoogleDriveFolderId))
-            {
-                MessageBox.Show("Please select a project first.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
 
             await RunWithLoader(async () =>
             {
                 try
                 {
-                    string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                    if (files == null || files.Length == 0) return;
-
-                    foreach (string filePath in files)
+                    string[] paths = (string[])e.Data.GetData(DataFormats.FileDrop);
+                    if (paths == null || paths.Length == 0)
                     {
-                        UpdateStatusLabel($"Uploading: {Path.GetFileName(filePath)}...");
-                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, CurrentFolderId);
-                        UpdateStatusLabel($"Uploaded: {Path.GetFileName(filePath)}");
+                        UpdateStatusLabel("No valid files or folders dropped.");
+                        return;
                     }
 
-                    MessageBox.Show($"{files.Length} file(s) uploaded successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UpdateStatusLabel($"Dropped {paths.Length} item(s).");
+
+                    foreach (string path in paths)
+                    {
+                        if (File.Exists(path)) // Handle file
+                        {
+                            UpdateStatusLabel($"Uploading file: {Path.GetFileName(path)}...");
+                            string uploadedFileId = await _apiHelper.UploadFileAsync(path, CurrentFolderId);
+                            UpdateStatusLabel($"Uploaded file: {Path.GetFileName(path)}");
+                        }
+                        else if (Directory.Exists(path)) // Handle folder
+                        {
+                            UpdateStatusLabel($"Creating folder: {Path.GetFileName(path)}...");
+                            string folderId = await _apiHelper.CreateFolderAsync(Path.GetFileName(path), CurrentFolderId);
+                            UpdateStatusLabel($"Created folder: {Path.GetFileName(path)}");
+                            await Task.Delay(500);
+
+                            // Optionally, recursively upload folder contents
+                            await UploadFolderContents(path, folderId);
+                        }
+                        else
+                        {
+                            UpdateStatusLabel($"Invalid item: {path}");
+                        }
+                    }
+
+                    //MessageBox.Show($"{paths.Length} item(s) processed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     await RefreshFileList();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to upload file(s): {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    UpdateStatusLabel("Error uploading file(s).");
+                    //MessageBox.Show($"Failed to process dropped item(s): {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UpdateStatusLabel("Error processing dropped item(s).");
                 }
             });
         }
+
+        private async Task UploadFolderContents(string folderPath, string parentFolderId)
+        {
+            try
+            {
+                // Upload files in the folder
+                foreach (string filePath in Directory.GetFiles(folderPath))
+                {
+                    UpdateStatusLabel($"Uploading file: {Path.GetFileName(filePath)}...");
+                    string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, parentFolderId);
+                    UpdateStatusLabel($"Uploaded file: {Path.GetFileName(filePath)}");
+                }
+
+                // Recursively handle subfolders
+                foreach (string subFolderPath in Directory.GetDirectories(folderPath))
+                {
+                    if (_createdFolders.Contains(subFolderPath)) continue;
+
+                    string subFolderName = Path.GetFileName(subFolderPath);
+                    UpdateStatusLabel($"Creating subfolder: {subFolderName}...");
+
+                    string subFolderId = await _apiHelper.CreateFolderAsync(subFolderName, parentFolderId);
+                    _createdFolders.Add(subFolderPath);
+                    await Task.Delay(500);
+
+                    UpdateStatusLabel($"Created subfolder: {subFolderName}");
+
+                    await UploadFolderContents(subFolderPath, subFolderId);
+                }
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show($"Failed to upload folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatusLabel("Error uploading folder contents.");
+            }
+        }
+
+
+        //private async Task UploadFolderContents(string folderPath, string parentFolderId)
+        //{
+        //    try
+        //    {
+        //        // Upload files in the folder
+        //        foreach (string filePath in Directory.GetFiles(folderPath))
+        //        {
+        //            UpdateStatusLabel($"Uploading file: {Path.GetFileName(filePath)}...");
+        //            string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, parentFolderId);
+        //            UpdateStatusLabel($"Uploaded file: {Path.GetFileName(filePath)}");
+        //            await Task.Delay(1000);
+        //        }
+
+        //        // Recursively handle subfolders
+        //        foreach (string subFolderPath in Directory.GetDirectories(folderPath))
+        //        {
+        //            string subFolderName = Path.GetFileName(subFolderPath);
+        //            UpdateStatusLabel($"Creating subfolder: {subFolderName}...");
+        //            string subFolderId = await _apiHelper.CreateFolderAsync(subFolderName, parentFolderId);
+        //            UpdateStatusLabel($"Created subfolder: {subFolderName}");
+        //            await Task.Delay(1000);
+        //            await UploadFolderContents(subFolderPath, subFolderId);
+        //            await Task.Delay(1000);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Failed to upload folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        UpdateStatusLabel("Error uploading folder contents.");
+        //    }
+        //}
 
         private ContextMenuStrip CreateContextMenu()
         {
@@ -839,7 +1280,6 @@ namespace QACORDMS.Client
                 }
             });
         }
-
         private async Task RenameClient_Click(object sender, EventArgs e)
         {
             if (clientsViewBox.SelectedNode == null || !(clientsViewBox.SelectedNode.Tag is Helpers.Client))
@@ -876,7 +1316,34 @@ namespace QACORDMS.Client
                         Phone = ""
                     };
 
-                    await _apiHelper.UpdateClientAsync(clientUpdate);
+                    var response = await _apiHelper.UpdateClientAsync(clientUpdate);
+
+                    // Check if the response was successful
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string errorMessage = "An error occurred while renaming the client.";
+                        try
+                        {
+                            string errorContent = await response.Content.ReadAsStringAsync();
+                            var jsonResponse = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(errorContent);
+                            if (jsonResponse != null && jsonResponse.ContainsKey("message"))
+                            {
+                                errorMessage = jsonResponse["message"]; // e.g., "A client with this name already exists."
+                            }
+                            else
+                            {
+                                errorMessage = $"HTTP {response.StatusCode}: {errorContent}";
+                            }
+                        }
+                        catch
+                        {
+                            errorMessage = $"HTTP {response.StatusCode}: Unable to parse error details.";
+                        }
+
+                        MessageBox.Show($"Failed to rename client: {errorMessage}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        UpdateStatusLabel("Error renaming client.");
+                        return;
+                    }
 
                     // Update the local client list
                     var clientToUpdate = _clients.FirstOrDefault(c => c.Id == client.Id);
@@ -896,7 +1363,6 @@ namespace QACORDMS.Client
                     selectedNode.Text = newName;
 
                     UpdateStatusLabel($"Client renamed to '{newName}' successfully.");
-                    MessageBox.Show($"Client renamed to '{newName}' successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
@@ -905,6 +1371,70 @@ namespace QACORDMS.Client
                 }
             });
         }
+        //private async Task RenameClient_Click(object sender, EventArgs e)
+        //{
+        //    if (clientsViewBox.SelectedNode == null || !(clientsViewBox.SelectedNode.Tag is Helpers.Client))
+        //    {
+        //        MessageBox.Show("Please select a client to rename.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //        return;
+        //    }
+
+        //    var selectedNode = clientsViewBox.SelectedNode;
+        //    var client = selectedNode.Tag as Helpers.Client;
+        //    if (client == null || client.Id == Guid.Empty)
+        //    {
+        //        MessageBox.Show("Invalid client selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
+
+        //    string newName = Prompt.ShowDialog("Enter new client name:", "Rename Client", client.Name);
+        //    if (string.IsNullOrEmpty(newName) || newName == client.Name)
+        //        return;
+
+        //    await RunWithLoader(async () =>
+        //    {
+        //        try
+        //        {
+        //            UpdateStatusLabel($"Renaming client '{client.Name}' to '{newName}'...");
+
+        //            var clientUpdate = new Helpers.ClientDto()
+        //            {
+        //                Id = client.Id,
+        //                Name = newName,
+        //                CompanyType = (int)client.CompanyType,
+        //                Address = "",
+        //                Email = "",
+        //                Phone = ""
+        //            };
+
+        //            await _apiHelper.UpdateClientAsync(clientUpdate);
+
+        //            // Update the local client list
+        //            var clientToUpdate = _clients.FirstOrDefault(c => c.Id == client.Id);
+        //            if (clientToUpdate != null)
+        //            {
+        //                clientToUpdate.Name = newName;
+        //            }
+
+        //            // Update the filtered list as well
+        //            var filteredClientToUpdate = _filteredClients.FirstOrDefault(c => c.Id == client.Id);
+        //            if (filteredClientToUpdate != null)
+        //            {
+        //                filteredClientToUpdate.Name = newName;
+        //            }
+
+        //            // Update the node's text
+        //            selectedNode.Text = newName;
+
+        //            UpdateStatusLabel($"Client renamed to '{newName}' successfully.");
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            MessageBox.Show($"Failed to rename client: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //            UpdateStatusLabel("Error renaming client.");
+        //        }
+        //    });
+        //}
 
         private async Task RenameFile_Click(object sender, EventArgs e)
         {
@@ -930,15 +1460,42 @@ namespace QACORDMS.Client
             {
                 try
                 {
+                    
                     UpdateStatusLabel($"Renaming '{driveItem.Name}' to '{newName}'...");
 
                     // Assuming the API helper has a method to rename a file/folder in Google Drive
-                    //await _apiHelper.RenameFileAsync(driveItem.Id, newName);
+                    var response = await _apiHelper.RenameFileAsync(driveItem.Id, newName);
+                    // Check if the response was successful
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string errorMessage = "An error occurred while renaming the client.";
+                        try
+                        {
+                            string errorContent = await response.Content.ReadAsStringAsync();
+                            var jsonResponse = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(errorContent);
+                            if (jsonResponse != null && jsonResponse.ContainsKey("message"))
+                            {
+                                errorMessage = jsonResponse["message"]; // e.g., "A client with this name already exists."
+                            }
+                            else
+                            {
+                                errorMessage = $"HTTP {response.StatusCode}: {errorContent}";
+                            }
+                        }
+                        catch
+                        {
+                            errorMessage = $"HTTP {response.StatusCode}: Unable to parse error details.";
+                        }
+
+                        MessageBox.Show($"Failed to rename client: {errorMessage}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        UpdateStatusLabel("Error renaming client.");
+                        return;
+                    }
+
 
                     // Refresh the file list
                     await LoadFolderContents(CurrentFolderId);
                     UpdateStatusLabel($"Item renamed to '{newName}' successfully.");
-                    MessageBox.Show($"Item renamed to '{newName}' successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
@@ -1047,6 +1604,106 @@ namespace QACORDMS.Client
             try
             {
                 bool fileChanged = false;
+                DateTime originalLastWriteTime = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.MinValue;
+
+                using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+                {
+                    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
+                    watcher.Changed += (s, e) => fileChanged = true;
+                    watcher.EnableRaisingEvents = true;
+
+                    UpdateStatusLabel($"Monitoring changes in {fileName}...");
+                    await Task.Run(() => process.WaitForExit());
+                }
+
+                // Check for changes via FileSystemWatcher or last write time
+                if (!fileChanged && File.Exists(filePath))
+                {
+                    DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                    fileChanged = currentLastWriteTime > originalLastWriteTime;
+                }
+
+                if (fileChanged && File.Exists(filePath))
+                {
+                    await RunWithLoader(async () =>
+                    {
+                        UpdateStatusLabel($"Detected changes in {fileName}, updating...");
+                        await WaitForFileRelease(filePath);
+
+                        // Retry ReplaceFileAsync up to 3 times for transient errors
+                        bool uploadSuccess = false;
+                        int maxRetries = 3;
+                        int retryDelayMs = 2000;
+                        for (int attempt = 1; attempt <= maxRetries; attempt++)
+                        {
+                            try
+                            {
+                                var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    uploadSuccess = true;
+                                    UpdateStatusLabel($"{fileName} updated successfully.");
+                                    break;
+                                }
+                                else
+                                {
+                                    string errorContent = await response.Content.ReadAsStringAsync();
+                                    UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
+                                    if (attempt < maxRetries)
+                                        await Task.Delay(retryDelayMs);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: {ex.Message}");
+                                if (attempt < maxRetries)
+                                    await Task.Delay(retryDelayMs);
+                            }
+                        }
+
+                        if (!uploadSuccess)
+                        {
+                            MessageBox.Show($"Failed to update {fileName} after {maxRetries} attempts. Changes may not be saved.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            UpdateStatusLabel($"Failed to update {fileName}.");
+                            return; // Keep the temp file for manual recovery
+                        }
+                    });
+                }
+                else
+                {
+                    UpdateStatusLabel($"No changes detected in {fileName}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+            }
+            finally
+            {
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        await WaitForFileRelease(filePath);
+                        File.Delete(filePath);
+                        UpdateStatusLabel($"{fileName} temp file removed.");
+                    }
+                    catch (Exception ex)
+                    {
+                        UpdateStatusLabel($"Failed to delete temp file {fileName}: {ex.Message}");
+                        // Keep the file to allow manual recovery
+                    }
+                }
+                openedFiles.Remove(filePath);
+            }
+        }
+
+        private async Task MonitorAndReplaceFileOnCloseV1(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        {
+            try
+            {
+                bool fileChanged = false;
                 var fileChangedTcs = new TaskCompletionSource<bool>();
 
                 using (FileSystemWatcher watcher = new FileSystemWatcher(tempFolderPath, fileName))
@@ -1097,7 +1754,7 @@ namespace QACORDMS.Client
 
         private async Task WaitForFileRelease(string filePath)
         {
-            int maxRetries = 10;
+            int maxRetries = 20; // Increased from 10
             int delayMs = 1000;
 
             for (int i = 0; i < maxRetries; i++)
@@ -1111,6 +1768,7 @@ namespace QACORDMS.Client
                 }
                 catch (IOException)
                 {
+                    UpdateStatusLabel($"Waiting for file release (attempt {i + 1}/{maxRetries})...");
                     await Task.Delay(delayMs);
                 }
             }
@@ -1251,35 +1909,66 @@ namespace QACORDMS.Client
 
         private void ShowLoader()
         {
-            if (loaderPanel == null) return;
+            if (loaderOverlay == null) return;
 
-            if (loaderPanel.InvokeRequired)
+            if (loaderOverlay.InvokeRequired)
             {
-                loaderPanel.Invoke(new Action(ShowLoader));
+                loaderOverlay.Invoke(new Action(ShowLoader));
             }
             else
             {
-                loaderPanel.Visible = true;
-                loaderPanel.BringToFront();
-                _animationTimer.Start();
+                loaderOverlay.Visible = true;
+                loaderOverlay.BringToFront(); // Ensure the overlay is on top
                 Application.DoEvents();
             }
         }
 
         private void HideLoader()
         {
-            if (loaderPanel == null) return;
+            if (loaderOverlay == null) return;
 
-            if (loaderPanel.InvokeRequired)
+            if (loaderOverlay.InvokeRequired)
             {
-                loaderPanel.Invoke(new Action(HideLoader));
+                loaderOverlay.Invoke(new Action(HideLoader));
             }
             else
             {
-                loaderPanel.Visible = false;
+                loaderOverlay.Visible = false;
                 Application.DoEvents();
             }
         }
+
+        //private void ShowLoader()
+        //{
+        //    if (loaderPanel == null) return;
+
+        //    if (loaderPanel.InvokeRequired)
+        //    {
+        //        loaderPanel.Invoke(new Action(ShowLoader));
+        //    }
+        //    else
+        //    {
+        //        loaderPanel.Visible = true;
+        //        loaderPanel.BringToFront();
+        //        _animationTimer.Start();
+        //        Application.DoEvents();
+        //    }
+        //}
+
+        //private void HideLoader()
+        //{
+        //    if (loaderPanel == null) return;
+
+        //    if (loaderPanel.InvokeRequired)
+        //    {
+        //        loaderPanel.Invoke(new Action(HideLoader));
+        //    }
+        //    else
+        //    {
+        //        loaderPanel.Visible = false;
+        //        Application.DoEvents();
+        //    }
+        //}
 
         private async Task RunWithLoader(Func<Task> action)
         {
@@ -1298,6 +1987,9 @@ namespace QACORDMS.Client
         {
             base.OnResize(e);
             AdjustControlsLayout();
+            CenterLoaderControls();
+            //base.OnResize(e);
+            //AdjustControlsLayout();
         }
 
         private void AdjustControlsLayout()
@@ -1331,6 +2023,130 @@ namespace QACORDMS.Client
 
             return $"{size:0.##} {sizes[order]}";
         }
+
+        //private void CenterLoaderControls()
+        //{
+        //    if (loaderOverlay == null || loaderPictureBox == null || loaderLabel == null) return;
+
+        //    // Center the loaderPictureBox
+        //    int pictureBoxX = (this.ClientSize.Width - loaderPictureBox.Width) / 2;
+        //    int pictureBoxY = (this.ClientSize.Height - loaderPictureBox.Height) / 2 - 20; // Slightly above center
+        //    loaderPictureBox.Location = new Point(pictureBoxX, pictureBoxY);
+
+        //    // Center the loaderLabel below the picture box
+        //    int labelX = (this.ClientSize.Width - loaderLabel.Width) / 2;
+        //    int labelY = pictureBoxY + loaderPictureBox.Height + 10; // 10px below the picture box
+        //    loaderLabel.Location = new Point(labelX, labelY);
+        //}
+
+        private void CenterLoaderControls()
+        {
+            if (loaderOverlay == null || loaderPictureBox == null || loaderLabel == null) return;
+
+            // Center the loaderPictureBox
+            int pictureBoxX = (this.ClientSize.Width - loaderPictureBox.Width) / 2;
+            int pictureBoxY = (this.ClientSize.Height - loaderPictureBox.Height) / 2 - 20; // Slightly above center
+            loaderPictureBox.Location = new Point(pictureBoxX, pictureBoxY);
+
+            // Center the loaderLabel below the picture box
+            int labelX = (this.ClientSize.Width - loaderLabel.Width) / 2;
+            int labelY = pictureBoxY + loaderPictureBox.Height + 10; // 10px below the picture box
+            loaderLabel.Location = new Point(labelX, labelY);
+        }
+
+        private void LoadAnimationFrames()
+        {
+            //_loadingFrames = new List<Image>();
+            //// Load frames (replace with actual paths or resources)
+            //for (int i = 0; i < 12; i++) // Assuming 12 frames
+            //{
+            //    _loadingFrames.Add(Image.FromFile($"path_to_frame_{i}.png"));
+            //}
+        }
+
+        private Image GetLoadingFrame(int frameIndex)
+        {
+            return _loadingFrames[frameIndex];
+        }
+    }
+}
+
+//public class ListViewItemComparer : IComparer
+//{
+//    private int column;
+//    private SortOrder order;
+
+//    public ListViewItemComparer(int column, SortOrder order)
+//    {
+//        this.column = column;
+//        this.order = order;
+//    }
+
+//    public int Compare(object x, object y)
+//    {
+//        int returnVal = 0;
+//        ListViewItem itemX = (ListViewItem)x;
+//        ListViewItem itemY = (ListViewItem)y;
+
+//        switch (column)
+//        {
+//            case 0: // Name column
+//                returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+//                break;
+//            case 1: // Type column
+//                returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+//                break;
+//            case 2: // Size column
+//                long sizeX = ParseSize(itemX.SubItems[column].Text);
+//                long sizeY = ParseSize(itemY.SubItems[column].Text);
+//                returnVal = sizeX.CompareTo(sizeY);
+//                break;
+//        }
+
+//        if (order == SortOrder.Descending)
+//            returnVal = -returnVal;
+
+//        return returnVal;
+//    }
+
+//    private long ParseSize(string sizeText)
+//    {
+//        if (string.IsNullOrEmpty(sizeText))
+//            return 0;
+
+//        string[] parts = sizeText.Split(' ');
+//        if (parts.Length > 0 && long.TryParse(parts[0], out long size))
+//        {
+//            return size;
+//        }
+//        return 0;
+//    }
+//}
+
+public static class Prompt
+{
+    public static string ShowDialog(string text, string caption, string defaultValue = "")
+    {
+        Form prompt = new Form()
+        {
+            Width = 300,
+            Height = 150,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            Text = caption,
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false
+        };
+        Label textLabel = new Label() { Left = 20, Top = 20, Text = text };
+        System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox() { Left = 20, Top = 50, Width = 240, Text = defaultValue };
+        Button confirmation = new Button() { Text = "OK", Left = 160, Width = 100, Top = 80, DialogResult = DialogResult.OK };
+        confirmation.Click += (sender, e) => { prompt.Close(); };
+        prompt.Controls.Add(textBox);
+        prompt.Controls.Add(confirmation);
+        prompt.Controls.Add(textLabel);
+        prompt.AcceptButton = confirmation;
+
+        return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
     }
 }
 
@@ -1360,10 +2176,26 @@ public class ListViewItemComparer : IComparer
                 returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
                 break;
             case 2: // Size column
-                long sizeX = ParseSize(itemX.SubItems[column].Text);
-                long sizeY = ParseSize(itemY.SubItems[column].Text);
+                double sizeX = ParseSize(itemX.SubItems[column].Text);
+                double sizeY = ParseSize(itemY.SubItems[column].Text);
                 returnVal = sizeX.CompareTo(sizeY);
                 break;
+            //case 3: // Date Created column
+            //    DateTime dateCreatedX = DateTime.TryParse(itemX.SubItems[column].Text, out var d1) ? d1 : DateTime.MinValue;
+            //    DateTime dateCreatedY = DateTime.TryParse(itemY.SubItems[column].Text, out var d2) ? d2 : DateTime.MinValue;
+            //    returnVal = DateTime.Compare(dateCreatedX, dateCreatedY);
+            //    break;
+            //case 4: // Created By column
+            //    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+            //    break;
+            //case 5: // Date Modified column
+            //    DateTime dateModifiedX = DateTime.TryParse(itemX.SubItems[column].Text, out var d3) ? d3 : DateTime.MinValue;
+            //    DateTime dateModifiedY = DateTime.TryParse(itemY.SubItems[column].Text, out var d4) ? d4 : DateTime.MinValue;
+            //    returnVal = DateTime.Compare(dateModifiedX, dateModifiedY);
+            //    break;
+            //case 6: // Last Modified By column
+            //    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+            //    break;
         }
 
         if (order == SortOrder.Descending)
@@ -1372,44 +2204,26 @@ public class ListViewItemComparer : IComparer
         return returnVal;
     }
 
-    private long ParseSize(string sizeText)
-    {
-        if (string.IsNullOrEmpty(sizeText))
+    private double ParseSize(string sizeText)
+    {  
+        if (string.IsNullOrEmpty(sizeText) || sizeText == "0 B")
             return 0;
 
         string[] parts = sizeText.Split(' ');
-        if (parts.Length > 0 && long.TryParse(parts[0], out long size))
-        {
-            return size;
-        }
-        return 0;
-    }
-}
+        if (parts.Length != 2 || !double.TryParse(parts[0], out double size))
+            return 0;
 
-public static class Prompt
-{
-    public static string ShowDialog(string text, string caption, string defaultValue = "")
-    {
-        Form prompt = new Form()
+        // Convert size to bytes based on the unit
+        string unit = parts[1].ToUpper();
+        return unit switch
         {
-            Width = 300,
-            Height = 150,
-            FormBorderStyle = FormBorderStyle.FixedDialog,
-            Text = caption,
-            StartPosition = FormStartPosition.CenterScreen,
-            MaximizeBox = false,
-            MinimizeBox = false
+            "B" => size,
+            "KB" => size * 1024,
+            "MB" => size * 1024 * 1024,
+            "GB" => size * 1024 * 1024 * 1024,
+            "TB" => size * 1024 * 1024 * 1024 * 1024,
+            _ => size
         };
-        Label textLabel = new Label() { Left = 20, Top = 20, Text = text };
-        System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox() { Left = 20, Top = 50, Width = 240, Text = defaultValue };
-        Button confirmation = new Button() { Text = "OK", Left = 160, Width = 100, Top = 80, DialogResult = DialogResult.OK };
-        confirmation.Click += (sender, e) => { prompt.Close(); };
-        prompt.Controls.Add(textBox);
-        prompt.Controls.Add(confirmation);
-        prompt.Controls.Add(textLabel);
-        prompt.AcceptButton = confirmation;
-
-        return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
     }
 }
 

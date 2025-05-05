@@ -63,21 +63,22 @@
             clientsGridView.Size = new Size(860, 429);
             clientsGridView.TabIndex = 6;
             clientsGridView.CellContentClick += clientsGridView_CellContentClick;
-            // 
-            // addProjectButtonColumn
-            // 
-            addProjectButtonColumn.MinimumWidth = 6;
+            clientsGridView.SizeChanged += clientsGridView_SizeChanged; // Add event handler for resizing
+                                                                        // 
+                                                                        // addProjectButtonColumn
+                                                                        // 
+            addProjectButtonColumn.MinimumWidth = 80; // Minimum width
             addProjectButtonColumn.Name = "AddProjectButton";
-            addProjectButtonColumn.Width = 125;
-            // 
-            // deleteButtonColumn
-            // 
-            deleteButtonColumn.MinimumWidth = 6;
+            addProjectButtonColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+                                                                                       // 
+                                                                                       // deleteButtonColumn
+                                                                                       // 
+            deleteButtonColumn.MinimumWidth = 80; // Minimum width
             deleteButtonColumn.Name = "Delete";
-            deleteButtonColumn.Width = 125;
-            // 
-            // addClientButton
-            // 
+            deleteButtonColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+                                                                                   // 
+                                                                                   // addClientButton
+                                                                                   // 
             addClientButton.BackColor = Color.FromArgb(33, 150, 243);
             addClientButton.FlatAppearance.BorderSize = 0;
             addClientButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(25, 120, 210);
@@ -164,26 +165,26 @@
             // dataGridViewTextBoxColumn1
             // 
             dataGridViewTextBoxColumn1.HeaderText = "Name";
-            dataGridViewTextBoxColumn1.MinimumWidth = 6;
+            dataGridViewTextBoxColumn1.MinimumWidth = 100; // Minimum width
             dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            dataGridViewTextBoxColumn1.Width = 125;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
+            dataGridViewTextBoxColumn1.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+                                                                                           // 
+                                                                                           // dataGridViewTextBoxColumn2
+                                                                                           // 
             dataGridViewTextBoxColumn2.HeaderText = "Email";
-            dataGridViewTextBoxColumn2.MinimumWidth = 6;
+            dataGridViewTextBoxColumn2.MinimumWidth = 100; // Minimum width
             dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            dataGridViewTextBoxColumn2.Width = 125;
-            // 
-            // dataGridViewTextBoxColumn3
-            // 
+            dataGridViewTextBoxColumn2.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+                                                                                           // 
+                                                                                           // dataGridViewTextBoxColumn3
+                                                                                           // 
             dataGridViewTextBoxColumn3.HeaderText = "Phone";
-            dataGridViewTextBoxColumn3.MinimumWidth = 6;
+            dataGridViewTextBoxColumn3.MinimumWidth = 80; // Minimum width
             dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            dataGridViewTextBoxColumn3.Width = 125;
-            // 
-            // ClientsForm
-            // 
+            dataGridViewTextBoxColumn3.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+                                                                                           // 
+                                                                                           // ClientsForm
+                                                                                           // 
             BackColor = Color.FromArgb(245, 245, 245);
             ClientSize = new Size(900, 600);
             Controls.Add(pageLabel);
@@ -199,10 +200,12 @@
             Padding = new Padding(20);
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Clients Management";
+            Load += ClientsForm_Load; // Add Load event handler to set initial column widths
             ((System.ComponentModel.ISupportInitialize)clientsGridView).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
+
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;

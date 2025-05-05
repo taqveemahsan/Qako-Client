@@ -19,6 +19,8 @@ namespace QACORDMS.Client
             InitializeComponent();
             LoadUsersAsync().ConfigureAwait(false);
 
+            this.Resize += UserForm_Resize; // Subscribe to the Resize event
+
             txtSearch.KeyDown += (sender, e) =>
             {
                 if (e.KeyCode == Keys.Enter)
@@ -27,6 +29,30 @@ namespace QACORDMS.Client
                     e.SuppressKeyPress = true; // Prevent the Enter key from making a beep sound
                 }
             };
+        }
+
+        private void UserForm_Resize(object sender, EventArgs e)
+        {
+            // Adjust the search bar and button
+            int margin = 40;
+            int searchButtonWidth = btnSearch.Width;
+            int searchButtonHeight = btnSearch.Height;
+
+            // Update search bar width
+            txtSearch.Width = this.ClientSize.Width - margin * 2 - searchButtonWidth - 10; // 10 for spacing between search bar and button
+
+            // Reposition search button
+            btnSearch.Location = new Point(txtSearch.Right + 10, txtSearch.Top);
+
+            // Ensure grid view height leaves space for the buttons at the bottom
+            int bottomControlsHeight = addUserButton.Height + 20; // Space for buttons and margin
+            usersGridView.Height = this.ClientSize.Height - usersGridView.Top - bottomControlsHeight - margin;
+
+            // Reposition bottom buttons
+            addUserButton.Location = new Point(this.ClientSize.Width - addUserButton.Width - margin, this.ClientSize.Height - bottomControlsHeight);
+            btnPrevious.Location = new Point(margin, this.ClientSize.Height - bottomControlsHeight);
+            btnNext.Location = new Point(btnPrevious.Right + 10, this.ClientSize.Height - bottomControlsHeight);
+            lblPageInfo.Location = new Point(btnNext.Right + 10, this.ClientSize.Height - bottomControlsHeight);
         }
 
         private async void addUserButton_Click(object sender, EventArgs e)

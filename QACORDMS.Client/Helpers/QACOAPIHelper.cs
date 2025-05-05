@@ -12,8 +12,8 @@ namespace QACORDMS.Client.Helpers
 {
     public class QACOAPIHelper
     {
-        private const string _BaseUrl = "https://localhost:44372/api/"; // Local
-        //private const string _BaseUrl = "https://test.ibt-learning.com/api/"; // Prod
+        //private const string _BaseUrl = "https://localhost:44372/api/"; // Local
+        private const string _BaseUrl = "https://test.ibt-learning.com/api/"; // Prod
         private readonly HttpClient _httpClient;
 
         public QACOAPIHelper(HttpClient httpClient)
@@ -172,7 +172,7 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        public async Task<bool> UpdateClientAsync(ClientDto client)
+        public async Task<HttpResponseMessage> UpdateClientAsync(ClientDto client)
         {
             AddAuthorizationHeader();
             try
@@ -204,22 +204,29 @@ namespace QACORDMS.Client.Helpers
                 {
                     string errorContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"HTTP Error: {response.StatusCode}, Content: {errorContent}");
-                    return false;
+                    return response;
                 }
 
                 response.EnsureSuccessStatusCode();
-                return true;
+                return response;
             }
             catch (HttpRequestException ex)
             {
-                string errorContent = ex.Message;
-                Console.WriteLine($"HTTP Error: {ex.Message}, Details: {errorContent}");
-                return false;
+                // Wrap network-related errors in a response-like object
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    ReasonPhrase = $"Network error: {ex.Message}"
+                };
+                return errorResponse;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating client: {ex.Message}");
-                return false;
+                // Wrap other unexpected errors
+                var errorResponse = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                {
+                    ReasonPhrase = $"Unexpected error: {ex.Message}"
+                };
+                return errorResponse;
             }
         }
 
@@ -272,35 +279,52 @@ namespace QACORDMS.Client.Helpers
 
         public async Task<List<GoogleDriveItem>> GetGoogleDriveFilesAsync(string folderId)
         {
-            AddAuthorizationHeader();
-            return await _httpClient.GetFromJsonAsync<List<GoogleDriveItem>>($"DocumentSync/{folderId}/list-items");
+
+            try
+            {
+                AddAuthorizationHeader();
+                return await _httpClient.GetFromJsonAsync<List<GoogleDriveItem>>($"DocumentSync/{folderId}/list-items");
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
         }
 
         public async Task<string> CreateFolderAsync(string folderName, string parentFolderId)
         {
-            AddAuthorizationHeader();
-
-            using (var content = new MultipartFormDataContent())
+            try
             {
-                content.Add(new StringContent(folderName), "folderName");
-                content.Add(new StringContent(parentFolderId), "parentFolderId");
+                AddAuthorizationHeader();
 
-                Console.WriteLine($"Sending request to {_BaseUrl}DocumentSync/create-folder");
-                Console.WriteLine($"FolderName: {folderName}, ParentFolderId: {parentFolderId}");
-
-                var response = await _httpClient.PostAsync("DocumentSync/create-folder", content);
-
-                if (!response.IsSuccessStatusCode)
+                using (var content = new MultipartFormDataContent())
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"Failed to create folder: {response.StatusCode} - {errorContent}");
+                    content.Add(new StringContent(folderName), "folderName");
+                    content.Add(new StringContent(parentFolderId), "parentFolderId");
+
+                    Console.WriteLine($"Sending request to {_BaseUrl}DocumentSync/create-folder");
+                    Console.WriteLine($"FolderName: {folderName}, ParentFolderId: {parentFolderId}");
+
+                    var response = await _httpClient.PostAsync("DocumentSync/create-folder", content);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        throw new Exception($"Failed to create folder: {response.StatusCode} - {errorContent}");
+                    }
+
+                    var result = await response.Content.ReadFromJsonAsync<FolderCreationResponse>();
+                    if (result == null || string.IsNullOrEmpty(result.FolderId))
+                        throw new Exception("Invalid response from server: Folder ID not found.");
+
+                    return result.FolderId;
                 }
+            }
+            catch (Exception ex)
+            {
 
-                var result = await response.Content.ReadFromJsonAsync<FolderCreationResponse>();
-                if (result == null || string.IsNullOrEmpty(result.FolderId))
-                    throw new Exception("Invalid response from server: Folder ID not found.");
-
-                return result.FolderId;
+                throw ex;
             }
         }
 
@@ -328,7 +352,7 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        public async Task<string> ReplaceFileAsync(string fileId, string filePath)
+        public async Task<string> ReplaceFileAsyncV1(string fileId, string filePath)
         {
             AddAuthorizationHeader();
 
@@ -347,25 +371,61 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
+        public async Task<HttpResponseMessage> ReplaceFileAsync(string fileId, string filePath)
+        {
+            try
+            {
+                using (var formData = new MultipartFormDataContent())
+                {
+                    formData.Add(new StringContent(fileId), "fileId");
+                    var fileContent = new ByteArrayContent(File.ReadAllBytes(filePath));
+                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    formData.Add(fileContent, "newFile", Path.GetFileName(filePath));
+
+                    var response = await _httpClient.PostAsync("DocumentSync/replace-file", formData);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"HTTP Error: {response.StatusCode}, Content: {errorContent}");
+                    }
+
+                    return response;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error replacing file: {ex.Message}");
+                throw;
+            }
+        }
+
         public async Task<string> UploadFileAsync(string filePath, string parentFolderId)
         {
-            AddAuthorizationHeader();
-
-            using (var multipartContent = new MultipartFormDataContent())
+            try
             {
-                var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(filePath));
-                fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-                multipartContent.Add(fileContent, "file", Path.GetFileName(filePath));
-                multipartContent.Add(new StringContent(parentFolderId), "ParentFolderId");
+                AddAuthorizationHeader();
 
-                var response = await _httpClient.PostAsync("DocumentSync/upload-file", multipartContent);
-                response.EnsureSuccessStatusCode();
+                using (var multipartContent = new MultipartFormDataContent())
+                {
+                    var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(filePath));
+                    fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                    multipartContent.Add(fileContent, "file", Path.GetFileName(filePath));
+                    multipartContent.Add(new StringContent(parentFolderId), "ParentFolderId");
 
-                var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
-                if (result == null || string.IsNullOrEmpty(result.FileId))
-                    throw new Exception("Invalid response from server: File ID not found.");
+                    var response = await _httpClient.PostAsync("DocumentSync/upload-file", multipartContent);
+                    response.EnsureSuccessStatusCode();
 
-                return result.FileId;
+                    var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
+                    if (result == null || string.IsNullOrEmpty(result.FileId))
+                        throw new Exception("Invalid response from server: File ID not found.");
+
+                    return result.FileId;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
@@ -576,25 +636,62 @@ namespace QACORDMS.Client.Helpers
                 throw new Exception($"Failed to update client: {ex.Message}");
             }
         }
-        public async Task<bool> RenameFileAsync(string fileId, string newName)
+
+        public async Task<HttpResponseMessage> RenameFileAsync(string itemId, string newName)
         {
-            AddAuthorizationHeader();
             try
             {
-                var renameRequest = new
+                var requestBody = new
                 {
-                    fileId = fileId,
-                    newName = newName
+                    ItemId = itemId,
+                    NewName = newName
                 };
 
-                var response = await _httpClient.PostAsJsonAsync("DocumentSync/rename", renameRequest);
-                response.EnsureSuccessStatusCode();
-                return true;
+                var jsonContent = new StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(requestBody),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+
+                string jsonString = await jsonContent.ReadAsStringAsync();
+                Console.WriteLine($"Request JSON: {jsonString}");
+
+                var response = await _httpClient.PatchAsync("DocumentSync/rename", jsonContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP Error: {response.StatusCode}, Content: {errorContent}");
+                    return response;
+                }
+
+                return response;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to rename file: {ex.Message}");
+                Console.WriteLine($"Error renaming item: {ex.Message}");
+                throw;
             }
         }
+        //public async Task<bool> RenameFileAsync(string fileId, string newName)
+        //{
+        //    AddAuthorizationHeader();
+        //    try
+        //    {
+        //        var renameRequest = new
+        //        {
+        //            fileId = fileId,
+        //            newName = newName
+        //        };
+
+        //        var response = await _httpClient.PostAsJsonAsync("DocumentSync/rename", renameRequest);
+        //        response.EnsureSuccessStatusCode();
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception($"Failed to rename file: {ex.Message}");
+        //    }
+        //}
     }
 }
