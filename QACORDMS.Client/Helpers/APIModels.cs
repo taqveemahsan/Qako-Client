@@ -13,6 +13,7 @@ namespace QACORDMS.Client.Helpers
         public string Email { get; set; }
         public string Phone { get; set; }
         public string Address { get; set; }
+        public string FolderSize { get; set; }
         public CompanyType CompanyType { get; set; }
     }
 
@@ -52,7 +53,7 @@ namespace QACORDMS.Client.Helpers
         public string FileExtension { get; set; }
 
         // Database-specific fields (nullable to handle Google Drive data)
-        public Guid GoogleId { get; set; } // Maps to the Google Drive item's Id
+        public string GoogleId { get; set; } // Maps to the Google Drive item's Id
         public bool IsFolder { get; set; } // Already present in your database entity
         public DateTime? CreatedOn { get; set; }
         public string CreatedBy { get; set; }

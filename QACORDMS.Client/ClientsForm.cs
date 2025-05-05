@@ -48,7 +48,7 @@ namespace QACORDMS.Client
             foreach (var client in response.Clients)
             {
                 var index = clientsGridView.Rows.Add(client.Name, client.Email, client.Phone);
-                clientsGridView.Rows[index].Cells["AddProjectButton"].Value = "Add Project";
+                //clientsGridView.Rows[index].Cells["AddProjectButton"].Value = "Add Project";
                 clientsGridView.Rows[index].Cells["Delete"].Value = "Delete";
                 clientsGridView.Rows[index].Tag = client.Id;
             }
@@ -132,26 +132,26 @@ namespace QACORDMS.Client
             // Define the proportions for each column
             float nameProportion = 0.30f; // 30%
             float emailProportion = 0.25f; // 25%
-            float phoneProportion = 0.20f; // 20%
-            float addProjectProportion = 0.125f; // 12.5%
-            float deleteProportion = 0.125f; // 12.5%
+            float phoneProportion = 0.25f; // 20%
+            //float addProjectProportion = 0.125f; // 12.5%
+            float deleteProportion = 0.20f; // 12.5%
 
             // Calculate the width for each column based on the proportions
             int nameWidth = Math.Max((int)(totalWidth * nameProportion), dataGridViewTextBoxColumn1.MinimumWidth);
             int emailWidth = Math.Max((int)(totalWidth * emailProportion), dataGridViewTextBoxColumn2.MinimumWidth);
             int phoneWidth = Math.Max((int)(totalWidth * phoneProportion), dataGridViewTextBoxColumn3.MinimumWidth);
-            int addProjectWidth = Math.Max((int)(totalWidth * addProjectProportion), addProjectButtonColumn.MinimumWidth);
+            //int addProjectWidth = Math.Max((int)(totalWidth * addProjectProportion), addProjectButtonColumn.MinimumWidth);
             int deleteWidth = Math.Max((int)(totalWidth * deleteProportion), deleteButtonColumn.MinimumWidth);
 
             // Adjust for any remaining width (distribute it proportionally)
-            int totalCalculatedWidth = nameWidth + emailWidth + phoneWidth + addProjectWidth + deleteWidth;
+            int totalCalculatedWidth = nameWidth + emailWidth + phoneWidth + deleteWidth;
             if (totalCalculatedWidth < totalWidth)
             {
                 int remainingWidth = totalWidth - totalCalculatedWidth;
                 nameWidth += (int)(remainingWidth * nameProportion);
                 emailWidth += (int)(remainingWidth * emailProportion);
                 phoneWidth += (int)(remainingWidth * phoneProportion);
-                addProjectWidth += (int)(remainingWidth * addProjectProportion);
+                //addProjectWidth += (int)(remainingWidth * addProjectProportion);
                 deleteWidth += (int)(remainingWidth * deleteProportion);
             }
 
@@ -159,7 +159,7 @@ namespace QACORDMS.Client
             dataGridViewTextBoxColumn1.Width = nameWidth;
             dataGridViewTextBoxColumn2.Width = emailWidth;
             dataGridViewTextBoxColumn3.Width = phoneWidth;
-            addProjectButtonColumn.Width = addProjectWidth;
+            //addProjectButtonColumn.Width = addProjectWidth;
             deleteButtonColumn.Width = deleteWidth;
         }
 

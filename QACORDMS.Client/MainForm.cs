@@ -331,7 +331,6 @@ namespace QACORDMS.Client
             var result = System.Text.RegularExpressions.Regex.Replace(enumName, "([a-z])([A-Z])", "$1 $2");
             return result;
         }
-
         private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
         {
             if (clientsViewBox.InvokeRequired)
@@ -357,7 +356,9 @@ namespace QACORDMS.Client
 
                     foreach (var client in group.OrderBy(c => c.Name))
                     {
-                        var clientNode = new TreeNode(client.Name)
+                        string folderSize = string.IsNullOrEmpty(client.FolderSize) ? "0KB" : client.FolderSize;
+                        string nodeText = $"{client.Name} ({folderSize})";
+                        var clientNode = new TreeNode(nodeText)
                         {
                             Tag = client
                         };
@@ -377,6 +378,51 @@ namespace QACORDMS.Client
                 }
             }
         }
+        //private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
+        //{
+        //    if (clientsViewBox.InvokeRequired)
+        //    {
+        //        clientsViewBox.Invoke(new Action<List<Helpers.Client>>(UpdateClientsViewBox), clientsToDisplay);
+        //    }
+        //    else
+        //    {
+        //        clientsViewBox.Nodes.Clear();
+
+        //        var groupedClients = clientsToDisplay
+        //            .GroupBy(c => c.CompanyType)
+        //            .OrderBy(g => g.Key);
+
+        //        foreach (var group in groupedClients)
+        //        {
+        //            string companyTypeName = Enum.GetName(typeof(CompanyType), group.Key);
+        //            string formattedCompanyTypeName = FormatCompanyTypeName(companyTypeName); // Format the name
+        //            var companyNode = new TreeNode(formattedCompanyTypeName)
+        //            {
+        //                Tag = group.Key // Store the original CompanyType for reference
+        //            };
+
+        //            foreach (var client in group.OrderBy(c => c.Name))
+        //            {
+        //                var clientNode = new TreeNode(client.Name)
+        //                {
+        //                    Tag = client
+        //                };
+        //                companyNode.Nodes.Add(clientNode);
+        //            }
+
+        //            clientsViewBox.Nodes.Add(companyNode);
+        //        }
+
+        //        if (clientsViewBox.Nodes.Count > 0)
+        //        {
+        //            clientsViewBox.Nodes[0].Expand();
+        //            if (clientsViewBox.Nodes[0].Nodes.Count > 0)
+        //            {
+        //                clientsViewBox.SelectedNode = clientsViewBox.Nodes[0].Nodes[0];
+        //            }
+        //        }
+        //    }
+        //}
 
         //private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
         //{
@@ -659,10 +705,6 @@ namespace QACORDMS.Client
                         // Map the remaining columns
                         listViewItem.SubItems.Add(item.IsFolder ? "Folder" : (item.FileExtension ?? "File")); // Type
                         listViewItem.SubItems.Add(ConvertSize(item.Size)); // Size
-                        //listViewItem.SubItems.Add(item.CreatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"); // Date Created
-                        //listViewItem.SubItems.Add(item.CreatedBy?.ToString() ?? "N/A"); // Created By
-                        //listViewItem.SubItems.Add(item.ModifiedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"); // Date Modified
-                        //listViewItem.SubItems.Add(item.ModifiedBy?.ToString() ?? "N/A"); // Last Modified By
                         listViewItem.SubItems.Add(item.CreatedOn.HasValue && item.CreatedOn.Value > DateTime.MinValue ? item.CreatedOn.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""); // Date Created
                         listViewItem.SubItems.Add(string.IsNullOrEmpty(item.CreatedBy) || (item.CreatedBy != null && item.CreatedBy.ToLower() == Guid.Empty.ToString().ToLower()) ? "" : item.CreatedBy); // Created By
                         listViewItem.SubItems.Add(item.ModifiedOn.HasValue && item.ModifiedOn.Value > DateTime.MinValue ? item.ModifiedOn.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""); // Date Modified
@@ -696,137 +738,6 @@ namespace QACORDMS.Client
                 UpdateStatusLabel("Error loading folder contents.");
             }
         }
-        //private async Task LoadFolderContents(string folderId)
-        //{
-        //    try
-        //    {
-        //        var driveItems = await _apiHelper.GetGoogleDriveFilesAsync(folderId);
-
-        //        if (listView1.InvokeRequired)
-        //        {
-        //            listView1.Invoke(new Action(() =>
-        //            {
-        //                listView1.Items.Clear();
-
-        //                foreach (var item in driveItems)
-        //                {
-        //                    if (!string.IsNullOrEmpty(item.ThumbnailLink) && !imageList1.Images.ContainsKey(item.MimeType ?? "Unknown"))
-        //                    {
-        //                        try
-        //                        {
-        //                            using (var client = new HttpClient())
-        //                            {
-        //                                var imageData = client.GetByteArrayAsync(item.ThumbnailLink).Result;
-        //                                using (var ms = new MemoryStream(imageData))
-        //                                {
-        //                                    var thumbnail = Image.FromStream(ms);
-        //                                    imageList1.Images.Add(item.MimeType ?? "Unknown", thumbnail);
-        //                                }
-        //                            }
-        //                        }
-        //                        catch (Exception ex)
-        //                        {
-        //                            Console.WriteLine($"Failed to load thumbnail for {item.Name}: {ex.Message}");
-        //                        }
-        //                    }
-
-        //                    var listViewItem = new ListViewItem(item.Name)
-        //                    {
-        //                        ImageKey = item.MimeType ?? "Unknown",
-        //                        ImageIndex = imageList1.Images.IndexOfKey(item.MimeType ?? "Unknown"),
-        //                        Tag = item
-        //                    };
-
-        //                    listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
-        //                    listViewItem.SubItems.Add(ConvertSize(item.Size));
-
-        //                    listView1.Items.Add(listViewItem);
-        //                }
-
-        //                if (listView1.View == View.LargeIcon || listView1.View == View.SmallIcon)
-        //                {
-        //                    int x = 10, y = 20;
-        //                    foreach (ListViewItem item in listView1.Items)
-        //                    {
-        //                        item.Position = new Point(x, y);
-        //                        x += 150;
-        //                        if (x > listView1.Width - 150)
-        //                        {
-        //                            x = 10;
-        //                            y += 150;
-        //                        }
-        //                    }
-        //                }
-        //            }));
-        //        }
-        //        else
-        //        {
-        //            listView1.Items.Clear();
-
-        //            foreach (var item in driveItems)
-        //            {
-        //                if (!string.IsNullOrEmpty(item.ThumbnailLink) && !imageList1.Images.ContainsKey(item.MimeType ?? "Unknown"))
-        //                {
-        //                    try
-        //                    {
-        //                        using (var client = new HttpClient())
-        //                        {
-        //                            var imageData = await client.GetByteArrayAsync(item.ThumbnailLink);
-        //                            using (var ms = new MemoryStream(imageData))
-        //                            {
-        //                                var thumbnail = Image.FromStream(ms);
-        //                                imageList1.Images.Add(item.MimeType ?? "Unknown", thumbnail);
-        //                            }
-        //                        }
-        //                    }
-        //                    catch (Exception ex)
-        //                    {
-        //                        Console.WriteLine($"Failed to load thumbnail for {item.Name}: {ex.Message}");
-        //                    }
-        //                }
-
-        //                var listViewItem = new ListViewItem(item.Name)
-        //                {
-        //                    ImageKey = item.MimeType ?? "Unknown",
-        //                    ImageIndex = imageList1.Images.IndexOfKey(item.MimeType ?? "Unknown"),
-        //                    Tag = item
-        //                };
-
-        //                listViewItem.SubItems.Add(item.FileExtension ?? "Folder");
-        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
-        //                listViewItem.SubItems.Add(item.CreatedOn);
-        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
-        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
-        //                listViewItem.SubItems.Add(ConvertSize(item.Size));
-
-        //                listView1.Items.Add(listViewItem);
-        //            }
-
-        //            if (listView1.View == View.LargeIcon || listView1.View == View.SmallIcon)
-        //            {
-        //                int x = 10, y = 20;
-        //                foreach (ListViewItem item in listView1.Items)
-        //                {
-        //                    item.Position = new Point(x, y);
-        //                    x += 150;
-        //                    if (x > listView1.Width - 150)
-        //                    {
-        //                        x = 10;
-        //                        y += 150;
-        //                    }
-        //                }
-        //            }
-        //        }
-
-        //        UpdateStatusLabel($"Loaded {driveItems.Count} items.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Failed to load folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        UpdateStatusLabel("Error loading folder contents.");
-        //    }
-        //}
-
         private async void BackMenuItem_Click(object sender, EventArgs e)
         {
             if (FolderHistory.Count > 0)
@@ -865,21 +776,56 @@ namespace QACORDMS.Client
             }
         }
 
+        //private async void refreshMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    await RunWithLoader(async () =>
+        //    {
+        //        try
+        //        {
+        //            var clientsForm = new ClientsForm(_apiHelper);
+        //            clientsForm.ShowDialog();
+        //            LoadClientsAsync();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            MessageBox.Show($"Failed to open Clients form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        }
+        //    });
+        //}
+
         private async void refreshMenuItem_Click(object sender, EventArgs e)
         {
-            await RunWithLoader(async () =>
+            try
             {
-                try
+                UpdateStatusLabel("Refreshing clients...");
+                await RunWithLoader(async () =>
                 {
-                    var clientsForm = new ClientsForm(_apiHelper);
-                    clientsForm.ShowDialog();
-                    LoadClientsAsync();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to open Clients form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            });
+                    // Fetch clients from API (example implementation)
+                    var response = await _apiHelper.GetClientsAsync(); // Assume this method exists
+                    var clients = response.Clients;
+
+                    // Clear existing nodes
+                    clientsViewBox.Nodes.Clear();
+
+                    // Populate TreeView with clients and folder sizes
+                    foreach (var client in clients)
+                    {
+                        string nodeText = $"{client.Name} ({client.FolderSize})";
+                        TreeNode node = new TreeNode(nodeText)
+                        {
+                            Tag = client // Store client object for later use
+                        };
+                        clientsViewBox.Nodes.Add(node);
+                    }
+
+                    UpdateStatusLabel($"Loaded {clients.Count} clients.");
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to refresh clients: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatusLabel("Error refreshing clients.");
+            }
         }
 
         private async void UploadFileMenuItem_Click(object sender, EventArgs e)
@@ -1435,8 +1381,79 @@ namespace QACORDMS.Client
         //        }
         //    });
         //}
-
         private async Task RenameFile_Click(object sender, EventArgs e)
+        {
+            if (listView1.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Please select a file or folder to rename.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var selectedItem = listView1.SelectedItems[0];
+            var driveItem = selectedItem.Tag as GoogleDriveItem;
+            if (driveItem == null || string.IsNullOrEmpty(driveItem.Id)) // Updated to use GoogleId as per previous model change
+            {
+                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Extract the base name (without extension for files) to show in the dialog
+            string originalExtension = driveItem.IsFolder ? "" : Path.GetExtension(driveItem.Name);
+            string baseName = driveItem.IsFolder ? driveItem.Name : Path.GetFileNameWithoutExtension(driveItem.Name);
+
+            string newBaseName = Prompt.ShowDialog("Enter new name:", "Rename Item", baseName);
+            if (string.IsNullOrEmpty(newBaseName) || newBaseName == baseName)
+                return;
+
+            // Append the original extension for files
+            string newName = driveItem.IsFolder ? newBaseName : $"{newBaseName}{originalExtension}";
+            if (newName == driveItem.Name) // In case the name didn't actually change after adding extension
+                return;
+
+            await RunWithLoader(async () =>
+            {
+                try
+                {
+                    UpdateStatusLabel($"Renaming '{driveItem.Name}' to '{newName}'...");
+
+                    var response = await _apiHelper.RenameFileAsync(driveItem.Id, newName); // Updated to use GoogleId
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string errorMessage = "An error occurred while renaming the item.";
+                        try
+                        {
+                            string errorContent = await response.Content.ReadAsStringAsync();
+                            var jsonResponse = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(errorContent);
+                            if (jsonResponse != null && jsonResponse.ContainsKey("message"))
+                            {
+                                errorMessage = jsonResponse["message"]; // e.g., "An item with this name already exists in the folder."
+                            }
+                            else
+                            {
+                                errorMessage = $"HTTP {response.StatusCode}: {errorContent}";
+                            }
+                        }
+                        catch
+                        {
+                            errorMessage = $"HTTP {response.StatusCode}: Unable to parse error details.";
+                        }
+
+                        MessageBox.Show($"Failed to rename item: {errorMessage}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        UpdateStatusLabel("Error renaming item.");
+                        return;
+                    }
+
+                    await LoadFolderContents(CurrentFolderId);
+                    UpdateStatusLabel($"Item renamed to '{newName}' successfully.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to rename item: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UpdateStatusLabel("Error renaming item.");
+                }
+            });
+        }
+        private async Task RenameFile_ClickV1(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count == 0)
             {
@@ -1584,11 +1601,11 @@ namespace QACORDMS.Client
                             throw new Exception("Failed to open the file.");
 
                         openedFiles[tempFilePath] = process;
-                        Task.Run(() => MonitorAndReplaceFileOnClose(tempFilePath, driveItem.Id, fileName, process));
+                        await Task.Run(async () =>await MonitorAndReplaceFileOnClose(tempFilePath, driveItem.Id, fileName, process));
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error processing {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        //MessageBox.Show($"Error processing {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         UpdateStatusLabel($"Error processing {fileName}.");
                     }
                     finally
@@ -1600,6 +1617,117 @@ namespace QACORDMS.Client
         }
 
         private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        {
+            try
+            {
+                bool fileChanged = false;
+                DateTime originalLastWriteTime = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.MinValue;
+                string originalHash = File.Exists(filePath) ? ComputeFileHash(filePath) : null;
+
+                using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+                {
+                    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size;
+                    watcher.Changed += async (s, e) =>
+                    {
+                        if (File.Exists(filePath))
+                        {
+                            DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                            string currentHash = ComputeFileHash(filePath);
+                            if (currentLastWriteTime > originalLastWriteTime || currentHash != originalHash)
+                            {
+                                fileChanged = true;
+                                UpdateStatusLabel($"Changes detected in {fileName}, uploading...");
+                                await RunWithLoader(async () =>
+                                {
+                                    await WaitForFileRelease(filePath);
+                                    var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+                                    if (response.IsSuccessStatusCode)
+                                    {
+                                        UpdateStatusLabel($"{fileName} updated successfully.");
+                                        originalLastWriteTime = currentLastWriteTime; // Update baseline
+                                        originalHash = currentHash; // Update baseline
+                                    }
+                                    else
+                                    {
+                                        string errorContent = await response.Content.ReadAsStringAsync();
+                                        UpdateStatusLabel($"Failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
+                                    }
+                                });
+                            }
+                        }
+                    };
+                    watcher.EnableRaisingEvents = true;
+
+                    UpdateStatusLabel($"Monitoring changes in {fileName}...");
+                    await Task.Run(() => process.WaitForExit());
+
+                    // Check for changes one last time after process exit
+                    if (!fileChanged && File.Exists(filePath))
+                    {
+                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                        string currentHash = ComputeFileHash(filePath);
+                        if (currentLastWriteTime > originalLastWriteTime || currentHash != originalHash)
+                        {
+                            fileChanged = true;
+                            UpdateStatusLabel($"Changes detected in {fileName} on close, uploading...");
+                            await RunWithLoader(async () =>
+                            {
+                                await WaitForFileRelease(filePath);
+                                var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    UpdateStatusLabel($"{fileName} updated successfully.");
+                                }
+                                else
+                                {
+                                    string errorContent = await response.Content.ReadAsStringAsync();
+                                    UpdateStatusLabel($"Failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
+                                }
+                            });
+                        }
+                    }
+
+                    if (!fileChanged)
+                    {
+                        UpdateStatusLabel($"No changes detected in {fileName}.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+            }
+            finally
+            {
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        await WaitForFileRelease(filePath);
+                        File.Delete(filePath);
+                        UpdateStatusLabel($"{fileName} temp file removed.");
+                    }
+                    catch (Exception ex)
+                    {
+                        UpdateStatusLabel($"Failed to delete temp file {fileName}: {ex.Message}");
+                    }
+                }
+                openedFiles.Remove(filePath);
+            }
+        }
+
+        private string ComputeFileHash(string filePath)
+        {
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            using (var stream = File.OpenRead(filePath))
+            {
+                byte[] hash = md5.ComputeHash(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLower();
+            }
+        }
+
+        private async Task MonitorAndReplaceFileOnCloseV2(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
         {
             try
             {

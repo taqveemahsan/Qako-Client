@@ -16,7 +16,7 @@
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             clientsGridView = new DataGridView();
-            addProjectButtonColumn = new DataGridViewButtonColumn();
+            //addProjectButtonColumn = new DataGridViewButtonColumn();
             deleteButtonColumn = new DataGridViewButtonColumn();
             addClientButton = new Button();
             searchTextBox = new TextBox();
@@ -46,7 +46,7 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             clientsGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             clientsGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            clientsGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, addProjectButtonColumn, deleteButtonColumn });
+            clientsGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, deleteButtonColumn });
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = SystemColors.Window;
             dataGridViewCellStyle3.Font = new Font("Segoe UI", 10F);
@@ -63,16 +63,8 @@
             clientsGridView.Size = new Size(860, 429);
             clientsGridView.TabIndex = 6;
             clientsGridView.CellContentClick += clientsGridView_CellContentClick;
-            clientsGridView.SizeChanged += clientsGridView_SizeChanged; // Add event handler for resizing
-                                                                        // 
-                                                                        // addProjectButtonColumn
-                                                                        // 
-            addProjectButtonColumn.MinimumWidth = 80; // Minimum width
-            addProjectButtonColumn.Name = "AddProjectButton";
-            addProjectButtonColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
-                                                                                       // 
-                                                                                       // deleteButtonColumn
-                                                                                       // 
+            clientsGridView.SizeChanged += clientsGridView_SizeChanged;
+
             deleteButtonColumn.MinimumWidth = 80; // Minimum width
             deleteButtonColumn.Name = "Delete";
             deleteButtonColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
@@ -209,7 +201,6 @@
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
-        private DataGridViewButtonColumn addProjectButtonColumn;
         private DataGridViewButtonColumn deleteButtonColumn;
     }
 }
