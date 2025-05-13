@@ -3,11 +3,13 @@ using QACORDMS.Client.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 
 
@@ -378,96 +380,43 @@ namespace QACORDMS.Client
                 }
             }
         }
-        //private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
-        //{
-        //    if (clientsViewBox.InvokeRequired)
-        //    {
-        //        clientsViewBox.Invoke(new Action<List<Helpers.Client>>(UpdateClientsViewBox), clientsToDisplay);
-        //    }
-        //    else
-        //    {
-        //        clientsViewBox.Nodes.Clear();
 
-        //        var groupedClients = clientsToDisplay
-        //            .GroupBy(c => c.CompanyType)
-        //            .OrderBy(g => g.Key);
+        private void ClientsViewBox_DrawNode(object sender, DrawTreeNodeEventArgs e)
+        {
+            if (e.Node.Level == 1 && e.Node.Tag is Helpers.Client client) // Only client nodes
+            {
+                string name = client.Name;
+                string folderSize = string.IsNullOrEmpty(client.FolderSize) ? "0KB" : client.FolderSize;
 
-        //        foreach (var group in groupedClients)
-        //        {
-        //            string companyTypeName = Enum.GetName(typeof(CompanyType), group.Key);
-        //            string formattedCompanyTypeName = FormatCompanyTypeName(companyTypeName); // Format the name
-        //            var companyNode = new TreeNode(formattedCompanyTypeName)
-        //            {
-        //                Tag = group.Key // Store the original CompanyType for reference
-        //            };
+                Font nameFont = new Font(e.Node.TreeView.Font.FontFamily, 10, FontStyle.Regular);
+                Font sizeFont = new Font(e.Node.TreeView.Font.FontFamily, 7, FontStyle.Regular);
 
-        //            foreach (var client in group.OrderBy(c => c.Name))
-        //            {
-        //                var clientNode = new TreeNode(client.Name)
-        //                {
-        //                    Tag = client
-        //                };
-        //                companyNode.Nodes.Add(clientNode);
-        //            }
+                // Measure string sizes
+                SizeF nameSize = e.Graphics.MeasureString(name, nameFont);
+                PointF namePoint = new PointF(e.Bounds.X, e.Bounds.Y);
+                PointF sizePoint = new PointF(e.Bounds.X + nameSize.Width, e.Bounds.Y + 2); // Slight offset
 
-        //            clientsViewBox.Nodes.Add(companyNode);
-        //        }
+                // Draw background if selected
+                if ((e.State & TreeNodeStates.Selected) != 0)
+                {
+                    e.Graphics.FillRectangle(SystemBrushes.Highlight, e.Bounds);
+                }
+                else
+                {
+                    e.Graphics.FillRectangle(SystemBrushes.Window, e.Bounds);
+                }
 
-        //        if (clientsViewBox.Nodes.Count > 0)
-        //        {
-        //            clientsViewBox.Nodes[0].Expand();
-        //            if (clientsViewBox.Nodes[0].Nodes.Count > 0)
-        //            {
-        //                clientsViewBox.SelectedNode = clientsViewBox.Nodes[0].Nodes[0];
-        //            }
-        //        }
-        //    }
-        //}
+                // Draw texts
+                e.Graphics.DrawString(name, nameFont, Brushes.Black, namePoint);
+                e.Graphics.DrawString($" ({folderSize})", sizeFont, Brushes.Gray, sizePoint);
+            }
+            else
+            {
+                // Draw normal nodes (like company type headers)
+                e.DrawDefault = true;
+            }
+        }
 
-        //private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
-        //{
-        //    if (clientsViewBox.InvokeRequired)
-        //    {
-        //        clientsViewBox.Invoke(new Action<List<Helpers.Client>>(UpdateClientsViewBox), clientsToDisplay);
-        //    }
-        //    else
-        //    {
-        //        clientsViewBox.Nodes.Clear();
-
-        //        var groupedClients = clientsToDisplay
-        //            .GroupBy(c => c.CompanyType)
-        //            .OrderBy(g => g.Key);
-
-        //        foreach (var group in groupedClients)
-        //        {
-        //            string companyTypeName = Enum.GetName(typeof(CompanyType), group.Key);
-        //            var companyNode = new TreeNode(companyTypeName)
-        //            {
-        //                Tag = group.Key
-        //            };
-
-        //            foreach (var client in group.OrderBy(c => c.Name))
-        //            {
-        //                var clientNode = new TreeNode(client.Name)
-        //                {
-        //                    Tag = client
-        //                };
-        //                companyNode.Nodes.Add(clientNode);
-        //            }
-
-        //            clientsViewBox.Nodes.Add(companyNode);
-        //        }
-
-        //        if (clientsViewBox.Nodes.Count > 0)
-        //        {
-        //            clientsViewBox.Nodes[0].Expand();
-        //            if (clientsViewBox.Nodes[0].Nodes.Count > 0)
-        //            {
-        //                clientsViewBox.SelectedNode = clientsViewBox.Nodes[0].Nodes[0];
-        //            }
-        //        }
-        //    }
-        //}
 
         private async void SearchButton_Click(object sender, EventArgs e)
         {
@@ -793,40 +742,6 @@ namespace QACORDMS.Client
             });
         }
 
-        //private async void refreshMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    try
-        //    {
-        //        UpdateStatusLabel("Refreshing clients...");
-        //        await RunWithLoader(async () =>
-        //        {
-        //            // Fetch clients from API (example implementation)
-        //            var response = await _apiHelper.GetClientsAsync(); // Assume this method exists
-        //            var clients = response.Clients;
-
-        //            // Clear existing nodes
-        //            clientsViewBox.Nodes.Clear();
-
-        //            // Populate TreeView with clients and folder sizes
-        //            foreach (var client in clients)
-        //            {
-        //                string nodeText = $"{client.Name} ({client.FolderSize})";
-        //                TreeNode node = new TreeNode(nodeText)
-        //                {
-        //                    Tag = client // Store client object for later use
-        //                };
-        //                clientsViewBox.Nodes.Add(node);
-        //            }
-
-        //            UpdateStatusLabel($"Loaded {clients.Count} clients.");
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Failed to refresh clients: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        UpdateStatusLabel("Error refreshing clients.");
-        //    }
-        //}
 
         private async void UploadFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -981,40 +896,6 @@ namespace QACORDMS.Client
                 UpdateStatusLabel("Error uploading folder contents.");
             }
         }
-
-
-        //private async Task UploadFolderContents(string folderPath, string parentFolderId)
-        //{
-        //    try
-        //    {
-        //        // Upload files in the folder
-        //        foreach (string filePath in Directory.GetFiles(folderPath))
-        //        {
-        //            UpdateStatusLabel($"Uploading file: {Path.GetFileName(filePath)}...");
-        //            string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, parentFolderId);
-        //            UpdateStatusLabel($"Uploaded file: {Path.GetFileName(filePath)}");
-        //            await Task.Delay(1000);
-        //        }
-
-        //        // Recursively handle subfolders
-        //        foreach (string subFolderPath in Directory.GetDirectories(folderPath))
-        //        {
-        //            string subFolderName = Path.GetFileName(subFolderPath);
-        //            UpdateStatusLabel($"Creating subfolder: {subFolderName}...");
-        //            string subFolderId = await _apiHelper.CreateFolderAsync(subFolderName, parentFolderId);
-        //            UpdateStatusLabel($"Created subfolder: {subFolderName}");
-        //            await Task.Delay(1000);
-        //            await UploadFolderContents(subFolderPath, subFolderId);
-        //            await Task.Delay(1000);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Failed to upload folder contents: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        UpdateStatusLabel("Error uploading folder contents.");
-        //    }
-        //}
-
         private ContextMenuStrip CreateContextMenu()
         {
             var contextMenu = new ContextMenuStrip
@@ -1024,6 +905,25 @@ namespace QACORDMS.Client
                 ForeColor = Color.FromArgb(0, 102, 204),
                 ImageScalingSize = new Size(24, 24)
             };
+
+            // Add Open menu item for listView1
+            var openFileItem = new ToolStripMenuItem("Open")
+            {
+                BackColor = Color.FromArgb(173, 216, 230),
+                Font = new Font("Segoe UI", 11F),
+                ForeColor = Color.FromArgb(0, 102, 204)
+            };
+            openFileItem.Click += async (s, e) => await openToolStripMenuItem_Click(s, e); // Reuse double-click logic
+            contextMenu.Items.Add(openFileItem);
+
+            var uploadFileContextItem = new ToolStripMenuItem("Upload File")
+            {
+                BackColor = Color.FromArgb(173, 216, 230),
+                Font = new Font("Segoe UI", 11F),
+                ForeColor = Color.FromArgb(0, 102, 204)
+            };
+            uploadFileContextItem.Click += UploadFileMenuItem_Click;
+            contextMenu.Items.Add(uploadFileContextItem);
 
             var newMenu = new ToolStripMenuItem("New");
             newMenu.DropDownItems.Add("Folder", null, async (s, e) => await CreateFolder_Click(s, e));
@@ -1035,15 +935,6 @@ namespace QACORDMS.Client
             newMenu.DropDownItems.Add("WinRAR Archive", null, async (s, e) => await CreateNewFile("rar", "WinRAR Archive"));
             newMenu.DropDownItems.Add("WinRAR ZIP Archive", null, async (s, e) => await CreateNewFile("zip", "WinRAR ZIP Archive"));
             contextMenu.Items.Add(newMenu);
-
-            var uploadFileContextItem = new ToolStripMenuItem("Upload File")
-            {
-                BackColor = Color.FromArgb(173, 216, 230),
-                Font = new Font("Segoe UI", 11F),
-                ForeColor = Color.FromArgb(0, 102, 204)
-            };
-            uploadFileContextItem.Click += UploadFileMenuItem_Click;
-            contextMenu.Items.Add(uploadFileContextItem);
 
             var deleteFileItem = new ToolStripMenuItem("Delete File");
             deleteFileItem.Click += async (s, e) => await DeleteFile_Click(s, e);
@@ -1317,70 +1208,6 @@ namespace QACORDMS.Client
                 }
             });
         }
-        //private async Task RenameClient_Click(object sender, EventArgs e)
-        //{
-        //    if (clientsViewBox.SelectedNode == null || !(clientsViewBox.SelectedNode.Tag is Helpers.Client))
-        //    {
-        //        MessageBox.Show("Please select a client to rename.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        //        return;
-        //    }
-
-        //    var selectedNode = clientsViewBox.SelectedNode;
-        //    var client = selectedNode.Tag as Helpers.Client;
-        //    if (client == null || client.Id == Guid.Empty)
-        //    {
-        //        MessageBox.Show("Invalid client selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        return;
-        //    }
-
-        //    string newName = Prompt.ShowDialog("Enter new client name:", "Rename Client", client.Name);
-        //    if (string.IsNullOrEmpty(newName) || newName == client.Name)
-        //        return;
-
-        //    await RunWithLoader(async () =>
-        //    {
-        //        try
-        //        {
-        //            UpdateStatusLabel($"Renaming client '{client.Name}' to '{newName}'...");
-
-        //            var clientUpdate = new Helpers.ClientDto()
-        //            {
-        //                Id = client.Id,
-        //                Name = newName,
-        //                CompanyType = (int)client.CompanyType,
-        //                Address = "",
-        //                Email = "",
-        //                Phone = ""
-        //            };
-
-        //            await _apiHelper.UpdateClientAsync(clientUpdate);
-
-        //            // Update the local client list
-        //            var clientToUpdate = _clients.FirstOrDefault(c => c.Id == client.Id);
-        //            if (clientToUpdate != null)
-        //            {
-        //                clientToUpdate.Name = newName;
-        //            }
-
-        //            // Update the filtered list as well
-        //            var filteredClientToUpdate = _filteredClients.FirstOrDefault(c => c.Id == client.Id);
-        //            if (filteredClientToUpdate != null)
-        //            {
-        //                filteredClientToUpdate.Name = newName;
-        //            }
-
-        //            // Update the node's text
-        //            selectedNode.Text = newName;
-
-        //            UpdateStatusLabel($"Client renamed to '{newName}' successfully.");
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            MessageBox.Show($"Failed to rename client: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //            UpdateStatusLabel("Error renaming client.");
-        //        }
-        //    });
-        //}
         private async Task RenameFile_Click(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count == 0)
@@ -1443,74 +1270,6 @@ namespace QACORDMS.Client
                         return;
                     }
 
-                    await LoadFolderContents(CurrentFolderId);
-                    UpdateStatusLabel($"Item renamed to '{newName}' successfully.");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to rename item: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    UpdateStatusLabel("Error renaming item.");
-                }
-            });
-        }
-        private async Task RenameFile_ClickV1(object sender, EventArgs e)
-        {
-            if (listView1.SelectedItems.Count == 0)
-            {
-                MessageBox.Show("Please select a file or folder to rename.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var selectedItem = listView1.SelectedItems[0];
-            var driveItem = selectedItem.Tag as GoogleDriveItem;
-            if (driveItem == null || string.IsNullOrEmpty(driveItem.Id))
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            string newName = Prompt.ShowDialog("Enter new name:", "Rename Item", driveItem.Name);
-            if (string.IsNullOrEmpty(newName) || newName == driveItem.Name)
-                return;
-
-            await RunWithLoader(async () =>
-            {
-                try
-                {
-                    
-                    UpdateStatusLabel($"Renaming '{driveItem.Name}' to '{newName}'...");
-
-                    // Assuming the API helper has a method to rename a file/folder in Google Drive
-                    var response = await _apiHelper.RenameFileAsync(driveItem.Id, newName);
-                    // Check if the response was successful
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        string errorMessage = "An error occurred while renaming the client.";
-                        try
-                        {
-                            string errorContent = await response.Content.ReadAsStringAsync();
-                            var jsonResponse = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(errorContent);
-                            if (jsonResponse != null && jsonResponse.ContainsKey("message"))
-                            {
-                                errorMessage = jsonResponse["message"]; // e.g., "A client with this name already exists."
-                            }
-                            else
-                            {
-                                errorMessage = $"HTTP {response.StatusCode}: {errorContent}";
-                            }
-                        }
-                        catch
-                        {
-                            errorMessage = $"HTTP {response.StatusCode}: Unable to parse error details.";
-                        }
-
-                        MessageBox.Show($"Failed to rename client: {errorMessage}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        UpdateStatusLabel("Error renaming client.");
-                        return;
-                    }
-
-
-                    // Refresh the file list
                     await LoadFolderContents(CurrentFolderId);
                     UpdateStatusLabel($"Item renamed to '{newName}' successfully.");
                 }
@@ -1596,17 +1355,79 @@ namespace QACORDMS.Client
                             Verb = "open"
                         };
 
-                        var process = System.Diagnostics.Process.Start(processInfo);
+                        // Attempt to start the process
+                        System.Diagnostics.Process process = null;
+                        try
+                        {
+                            process = System.Diagnostics.Process.Start(processInfo);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log the exception if Process.Start throws one
+                            string errorMessage = $"Failed to start process for {fileName}: {ex.Message}";
+                            UpdateStatusLabel(errorMessage);
+                            LogToFile(errorMessage); // Assuming LogToFile is implemented as in previous messages
+                            throw new Exception(errorMessage, ex);
+                        }
+
                         if (process == null)
-                            throw new Exception("Failed to open the file.");
+                        {
+                            // Process.Start returned null, try an alternative method to open the file
+                            UpdateStatusLabel($"Process.Start returned null for {fileName}. Attempting alternative method...");
+
+                            // Check if there's a default application associated with the file extension
+                            string extension = Path.GetExtension(fileName).ToLower();
+                            string associatedApp = GetAssociatedApplication(extension);
+                            if (string.IsNullOrEmpty(associatedApp))
+                            {
+                                string errorMessage = $"No application associated with {extension} files. Please set a default application for {extension} files.";
+                                UpdateStatusLabel(errorMessage);
+                                LogToFile(errorMessage);
+                                MessageBox.Show(errorMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                throw new Exception(errorMessage);
+                            }
+
+                            // Try opening the file with the associated application explicitly
+                            processInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = associatedApp,
+                                Arguments = $"\"{tempFilePath}\"", // Pass the file path as an argument
+                                UseShellExecute = false // Don't use ShellExecute since we're specifying the app
+                            };
+
+                            try
+                            {
+                                process = System.Diagnostics.Process.Start(processInfo);
+                            }
+                            catch (Exception ex)
+                            {
+                                string errorMessage = $"Failed to open {fileName} with {associatedApp}: {ex.Message}";
+                                UpdateStatusLabel(errorMessage);
+                                LogToFile(errorMessage);
+                                throw new Exception(errorMessage, ex);
+                            }
+
+                            if (process == null)
+                            {
+                                string errorMessage = $"Failed to open {fileName} with {associatedApp}. Process is null.";
+                                UpdateStatusLabel(errorMessage);
+                                LogToFile(errorMessage);
+                                throw new Exception(errorMessage);
+                            }
+                        }
+
+                        UpdateStatusLabel($"{fileName} opened successfully with process ID {process.Id}.");
+                        LogToFile($"{fileName} opened successfully with process ID {process.Id}.");
 
                         openedFiles[tempFilePath] = process;
-                        await Task.Run(async () =>await MonitorAndReplaceFileOnClose(tempFilePath, driveItem.Id, fileName, process));
+                        await Task.Run(async () => await MonitorAndReplaceFileOnClose(tempFilePath, driveItem.Id, fileName, process));
                     }
                     catch (Exception ex)
                     {
-                        //MessageBox.Show($"Error processing {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        UpdateStatusLabel($"Error processing {fileName}.");
+                        string errorMessage = $"Error processing {fileName}: {ex.Message}";
+                        UpdateStatusLabel(errorMessage);
+                        LogToFile(errorMessage);
+                        MessageBox.Show(errorMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     finally
                     {
@@ -1616,45 +1437,148 @@ namespace QACORDMS.Client
             }
         }
 
+        // Helper method to get the associated application for a file extension
+        private string GetAssociatedApplication(string extension)
+        {
+            try
+            {
+                // Use the Windows Registry to find the default application for the extension
+                using (var key = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(extension))
+                {
+                    if (key == null) return null;
+
+                    object value = key.GetValue("");
+                    if (value == null) return null;
+
+                    string progId = value.ToString();
+                    using (var commandKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey($@"{progId}\shell\open\command"))
+                    {
+                        if (commandKey == null) return null;
+
+                        object commandValue = commandKey.GetValue("");
+                        if (commandValue == null) return null;
+
+                        // Extract the executable path from the command (e.g., "C:\Program Files\...\WINWORD.EXE" "%1")
+                        string command = commandValue.ToString();
+                        int exeEnd = command.IndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
+                        if (exeEnd <= 4) return null;
+
+                        string exePath = command.Substring(0, exeEnd).Replace("\"", "");
+                        if (File.Exists(exePath))
+                            return exePath;
+
+                        return null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = $"Failed to get associated application for {extension}: {ex.Message}";
+                UpdateStatusLabel(errorMessage);
+                LogToFile(errorMessage);
+                return null;
+            }
+        }
+
+        private void LogToFile(string errorMessage)
+        {
+            //throw new NotImplementedException();
+        }
+
+
         private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
         {
             try
             {
+                if (!File.Exists(filePath))
+                {
+                    UpdateStatusLabel($"Error: File {fileName} does not exist at {filePath}.");
+                    return;
+                }
+
                 bool fileChanged = false;
-                DateTime originalLastWriteTime = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.MinValue;
-                string originalHash = File.Exists(filePath) ? ComputeFileHash(filePath) : null;
+                DateTime originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                long originalFileSize = new FileInfo(filePath).Length;
+                string originalHash = await ComputeFileHashSafe(filePath);
 
                 UpdateStatusLabel($"Monitoring changes in {fileName}...");
+                UpdateStatusLabel($"Initial - LastWriteTime: {originalLastWriteTime}");
+                UpdateStatusLabel($"Initial - Size: {originalFileSize} bytes");
+                UpdateStatusLabel($"Initial - Hash: {originalHash}");
 
+                // Create watcher with proper configuration
                 using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
                 {
                     watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
+                    watcher.IncludeSubdirectories = false;
+                    watcher.InternalBufferSize = 4096 * 4; // Increase buffer size
+
+                    // Track last change time to avoid multiple rapid events
+                    DateTime lastChangeTime = DateTime.MinValue;
+
                     watcher.Changed += async (s, e) =>
                     {
                         try
                         {
+                            // Debounce rapid changes (Office apps trigger multiple events)
+                            if (DateTime.Now.Subtract(lastChangeTime).TotalMilliseconds < 100)
+                                return;
+
+                            lastChangeTime = DateTime.Now;
+
+                            // Wait a bit for file to be fully written
+                            await Task.Delay(200);
+
                             if (File.Exists(filePath))
                             {
-                                string currentHash = ComputeFileHash(filePath);
-                                if (currentHash != originalHash)
+                                DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                                long currentFileSize = new FileInfo(filePath).Length;
+                                string currentHash = await ComputeFileHashSafe(filePath);
+
+                                UpdateStatusLabel($"FileSystemWatcher triggered for {fileName}:");
+                                UpdateStatusLabel($"Current - LastWriteTime: {currentLastWriteTime}");
+                                UpdateStatusLabel($"Current - Size: {currentFileSize} bytes");
+                                UpdateStatusLabel($"Current - Hash: {currentHash}");
+
+                                // More comprehensive change detection
+                                bool hasChanged = false;
+
+                                // Check time difference (with tolerance for file system precision)
+                                if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1)
+                                {
+                                    UpdateStatusLabel("Change detected: LastWriteTime differs");
+                                    hasChanged = true;
+                                }
+
+                                // Check size difference
+                                if (currentFileSize != originalFileSize)
+                                {
+                                    UpdateStatusLabel($"Change detected: Size differs ({originalFileSize} -> {currentFileSize})");
+                                    hasChanged = true;
+                                }
+
+                                // Check hash difference (most reliable for content changes)
+                                if (!string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    UpdateStatusLabel("Change detected: Hash differs");
+                                    hasChanged = true;
+                                }
+
+                                if (hasChanged)
                                 {
                                     fileChanged = true;
-                                    UpdateStatusLabel($"Immediate change detected in {fileName}, queuing upload...");
-                                    await RunWithLoader(async () =>
+                                    UpdateStatusLabel($"Content change detected in {fileName}, scheduling upload...");
+
+                                    // Schedule upload after a delay to ensure file is stable
+                                    _ = Task.Run(async () =>
                                     {
-                                        await WaitForFileRelease(filePath);
-                                        var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                                        if (response.IsSuccessStatusCode)
-                                        {
-                                            UpdateStatusLabel($"{fileName} updated successfully.");
-                                            originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                                            originalHash = currentHash;
-                                        }
-                                        else
-                                        {
-                                            string errorContent = await response.Content.ReadAsStringAsync();
-                                            UpdateStatusLabel($"Failed to update {fileName}: {errorContent}");
-                                        }
+                                        await Task.Delay(1000); // Wait for file to be fully saved
+                                        await UploadFileWithRetry(filePath, fileId, fileName);
+
+                                        // Update reference values after successful upload
+                                        originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                                        originalFileSize = new FileInfo(filePath).Length;
+                                        originalHash = await ComputeFileHashSafe(filePath);
                                     });
                                 }
                             }
@@ -1664,61 +1588,66 @@ namespace QACORDMS.Client
                             UpdateStatusLabel($"Error in FileSystemWatcher for {fileName}: {ex.Message}");
                         }
                     };
-                    watcher.EnableRaisingEvents = true;
 
-                    // Wait for the process to exit
+                    watcher.Error += (s, e) =>
+                    {
+                        UpdateStatusLabel($"FileSystemWatcher error for {fileName}: {e.GetException().Message}");
+                    };
+
+                    watcher.EnableRaisingEvents = true;
+                    UpdateStatusLabel($"File monitoring started for {fileName}");
+
+                    // Wait for process to complete
+                    UpdateStatusLabel($"Waiting for process to exit for {fileName}...");
                     await Task.Run(() => process.WaitForExit());
 
-                    // Final check for changes after process exit
+                    // Important: Wait longer for Office apps to fully release files
+                    UpdateStatusLabel($"Process exited for {fileName}. Waiting for file to be fully saved...");
+                    await Task.Delay(10000); // Increased to 10 seconds for Office apps
+
+                    // Force close any remaining processes that might be holding the file
+                    await ForceCloseProcesses(filePath);
+
+                    // Final comprehensive check for changes
+                    await Task.Delay(2000); // Additional wait after force-closing processes
+
                     if (File.Exists(filePath))
                     {
                         DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                        string currentHash = ComputeFileHash(filePath);
-                        if (currentLastWriteTime > originalLastWriteTime || currentHash != originalHash)
+                        long currentFileSize = new FileInfo(filePath).Length;
+                        string currentHash = await ComputeFileHashSafe(filePath);
+
+                        UpdateStatusLabel($"Final check for {fileName}:");
+                        UpdateStatusLabel($"Final - LastWriteTime: {currentLastWriteTime}");
+                        UpdateStatusLabel($"Final - Size: {currentFileSize} bytes");
+                        UpdateStatusLabel($"Final - Hash: {currentHash}");
+
+                        // Comprehensive final check
+                        bool finalChanged = false;
+
+                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1)
+                        {
+                            UpdateStatusLabel("Final change detected: LastWriteTime differs");
+                            finalChanged = true;
+                        }
+
+                        if (currentFileSize != originalFileSize)
+                        {
+                            UpdateStatusLabel($"Final change detected: Size differs ({originalFileSize} -> {currentFileSize})");
+                            finalChanged = true;
+                        }
+
+                        if (!string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+                        {
+                            UpdateStatusLabel("Final change detected: Hash differs");
+                            finalChanged = true;
+                        }
+
+                        if (finalChanged)
                         {
                             fileChanged = true;
-                            UpdateStatusLabel($"Final change detected in {fileName} on process exit, uploading...");
-                            await RunWithLoader(async () =>
-                            {
-                                await WaitForFileRelease(filePath);
-                                int maxRetries = 3;
-                                int retryDelayMs = 2000;
-                                bool uploadSuccess = false;
-
-                                for (int attempt = 1; attempt <= maxRetries; attempt++)
-                                {
-                                    try
-                                    {
-                                        UpdateStatusLabel($"Uploading {fileName} (attempt {attempt}/{maxRetries})...");
-                                        var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                                        if (response.IsSuccessStatusCode)
-                                        {
-                                            UpdateStatusLabel($"{fileName} updated successfully.");
-                                            uploadSuccess = true;
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            string errorContent = await response.Content.ReadAsStringAsync();
-                                            UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
-                                            if (attempt < maxRetries)
-                                                await Task.Delay(retryDelayMs);
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: {ex.Message}");
-                                        if (attempt < maxRetries)
-                                            await Task.Delay(retryDelayMs);
-                                    }
-                                }
-
-                                if (!uploadSuccess)
-                                {
-                                    MessageBox.Show($"Failed to update {fileName} after {maxRetries} attempts. Changes may not be saved.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    UpdateStatusLabel($"Failed to update {fileName}.");
-                                }
-                            });
+                            UpdateStatusLabel($"Final change detected in {fileName}, uploading...");
+                            await UploadFileWithRetry(filePath, fileId, fileName);
                         }
                     }
 
@@ -1735,124 +1664,211 @@ namespace QACORDMS.Client
             }
             finally
             {
-                if (File.Exists(filePath))
-                {
-                    try
-                    {
-                        await WaitForFileRelease(filePath);
-                        File.Delete(filePath);
-                        UpdateStatusLabel($"{fileName} temp file removed.");
-                    }
-                    catch (Exception ex)
-                    {
-                        UpdateStatusLabel($"Failed to delete temp file {fileName}: {ex.Message}");
-                    }
-                }
-                openedFiles.Remove(filePath);
+                // Clean up temp file with proper retry mechanism
+                await CleanupTempFile(filePath, fileName);
             }
         }
 
-        private async Task MonitorAndReplaceFileOnCloseV3(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        // Helper method for safe hash computation
+        private async Task<string> ComputeFileHashSafe(string filePath)
+        {
+            int maxRetries = 3;
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    // Ensure file is not locked before computing hash
+                    using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    {
+                        using (var sha256 = SHA256.Create())
+                        {
+                            byte[] hashBytes = await Task.Run(() => sha256.ComputeHash(fileStream));
+                            return Convert.ToBase64String(hashBytes);
+                        }
+                    }
+                }
+                catch (IOException ex) when (ex.Message.Contains("being used by another process"))
+                {
+                    UpdateStatusLabel($"File hash computation retry {i + 1}/{maxRetries} for {Path.GetFileName(filePath)}");
+                    await Task.Delay(1000);
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatusLabel($"Error computing hash for {Path.GetFileName(filePath)}: {ex.Message}");
+                    if (i == maxRetries - 1)
+                        throw;
+                    await Task.Delay(1000);
+                }
+            }
+            return string.Empty;
+        }
+
+        // Helper method for force-closing processes
+        private async Task ForceCloseProcesses(string filePath)
         {
             try
             {
-                bool fileChanged = false;
-                DateTime originalLastWriteTime = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.MinValue;
-                string originalHash = File.Exists(filePath) ? ComputeFileHash(filePath) : null;
+                UpdateStatusLabel("Force-closing Office processes...");
 
-                using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+                // Get all Word and Excel processes
+                var wordProcesses = Process.GetProcessesByName("WINWORD");
+                var excelProcesses = Process.GetProcessesByName("EXCEL");
+                var processes = wordProcesses.Concat(excelProcesses);
+
+                foreach (var process in processes)
                 {
-                    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size;
-                    watcher.Changed += async (s, e) =>
+                    try
                     {
-                        if (File.Exists(filePath))
+                        UpdateStatusLabel($"Closing process {process.ProcessName} (PID: {process.Id})");
+
+                        // Try graceful close first
+                        if (!process.CloseMainWindow())
                         {
-                            DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                            string currentHash = ComputeFileHash(filePath);
-                            if (currentLastWriteTime > originalLastWriteTime || currentHash != originalHash)
-                            {
-                                fileChanged = true;
-                                UpdateStatusLabel($"Changes detected in {fileName}, uploading...");
-                                await RunWithLoader(async () =>
-                                {
-                                    await WaitForFileRelease(filePath);
-                                    var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                                    if (response.IsSuccessStatusCode)
-                                    {
-                                        UpdateStatusLabel($"{fileName} updated successfully.");
-                                        originalLastWriteTime = currentLastWriteTime; // Update baseline
-                                        originalHash = currentHash; // Update baseline
-                                    }
-                                    else
-                                    {
-                                        string errorContent = await response.Content.ReadAsStringAsync();
-                                        UpdateStatusLabel($"Failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
-                                    }
-                                });
-                            }
+                            // If graceful close fails, force kill
+                            process.Kill();
                         }
-                    };
-                    watcher.EnableRaisingEvents = true;
 
-                    UpdateStatusLabel($"Monitoring changes in {fileName}...");
-                    await Task.Run(() => process.WaitForExit());
-
-                    // Check for changes one last time after process exit
-                    if (!fileChanged && File.Exists(filePath))
-                    {
-                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                        string currentHash = ComputeFileHash(filePath);
-                        if (currentLastWriteTime > originalLastWriteTime || currentHash != originalHash)
+                        // Wait for process to exit
+                        if (!process.WaitForExit(5000))
                         {
-                            fileChanged = true;
-                            UpdateStatusLabel($"Changes detected in {fileName} on close, uploading...");
-                            await RunWithLoader(async () =>
-                            {
-                                await WaitForFileRelease(filePath);
-                                var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                                if (response.IsSuccessStatusCode)
-                                {
-                                    UpdateStatusLabel($"{fileName} updated successfully.");
-                                }
-                                else
-                                {
-                                    string errorContent = await response.Content.ReadAsStringAsync();
-                                    UpdateStatusLabel($"Failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
-                                }
-                            });
+                            UpdateStatusLabel($"Process {process.ProcessName} did not exit, forcing...");
+                            process.Kill();
+                            process.WaitForExit(2000);
+                        }
+
+                        UpdateStatusLabel($"Process {process.ProcessName} closed successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        UpdateStatusLabel($"Error closing process: {ex.Message}");
+                    }
+                }
+
+                // Give some time for handles to be released
+                await Task.Delay(3000);
+            }
+            catch (Exception ex)
+            {
+                UpdateStatusLabel($"Error in ForceCloseProcesses: {ex.Message}");
+            }
+        }
+
+        // Helper method for upload with retry
+        private async Task UploadFileWithRetry(string filePath, string fileId, string fileName)
+        {
+            try
+            {
+                await WaitForFileRelease(filePath);
+
+                int maxRetries = 3;
+                int retryDelayMs = 2000;
+                bool uploadSuccess = false;
+
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                {
+                    try
+                    {
+                        UpdateStatusLabel($"Uploading {fileName} (attempt {attempt}/{maxRetries})...");
+                        var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            UpdateStatusLabel($"{fileName} uploaded successfully.");
+                            uploadSuccess = true;
+                            break;
+                        }
+                        else
+                        {
+                            string errorContent = await response.Content.ReadAsStringAsync();
+                            UpdateStatusLabel($"Upload attempt {attempt} failed: HTTP {response.StatusCode}, {errorContent}");
+
+                            if (attempt < maxRetries)
+                                await Task.Delay(retryDelayMs);
                         }
                     }
-
-                    if (!fileChanged)
+                    catch (Exception ex)
                     {
-                        UpdateStatusLabel($"No changes detected in {fileName}.");
+                        UpdateStatusLabel($"Upload attempt {attempt} failed: {ex.Message}");
+
+                        if (attempt < maxRetries)
+                            await Task.Delay(retryDelayMs);
                     }
+                }
+
+                if (!uploadSuccess)
+                {
+                    MessageBox.Show($"Failed to upload {fileName} after {maxRetries} attempts. Changes may not be saved.",
+                                   "Upload Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UpdateStatusLabel($"Failed to upload {fileName}.");
                 }
             }
             catch (Exception ex)
             {
-                //MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
-            }
-            finally
-            {
-                if (File.Exists(filePath))
-                {
-                    try
-                    {
-                        await WaitForFileRelease(filePath);
-                        File.Delete(filePath);
-                        UpdateStatusLabel($"{fileName} temp file removed.");
-                    }
-                    catch (Exception ex)
-                    {
-                        UpdateStatusLabel($"Failed to delete temp file {fileName}: {ex.Message}");
-                    }
-                }
-                openedFiles.Remove(filePath);
+                UpdateStatusLabel($"Error in UploadFileWithRetry for {fileName}: {ex.Message}");
             }
         }
 
+        // Helper method for cleanup
+        private async Task CleanupTempFile(string filePath, string fileName)
+        {
+            if (!File.Exists(filePath))
+            {
+                openedFiles.Remove(filePath);
+                return;
+            }
+
+            try
+            {
+                // Wait for file release before cleanup
+                await WaitForFileRelease(filePath);
+
+                // Try to delete the temp file
+                File.Delete(filePath);
+                UpdateStatusLabel($"{fileName} temp file removed successfully.");
+            }
+            catch (IOException ex) when (ex.Message.Contains("being used by another process"))
+            {
+                UpdateStatusLabel($"Cannot delete {fileName} - file is locked. Creating backup...");
+
+                try
+                {
+                    // If we can't delete, rename to backup
+                    string backupPath = filePath + ".backup." + DateTime.Now.Ticks;
+                    File.Move(filePath, backupPath);
+                    UpdateStatusLabel($"Moved locked file to: {backupPath}");
+
+                    // Schedule cleanup for later
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(60000); // Wait 1 minute
+                        try
+                        {
+                            if (File.Exists(backupPath))
+                            {
+                                File.Delete(backupPath);
+                                UpdateStatusLabel($"Delayed cleanup successful for {fileName}");
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore cleanup errors
+                        }
+                    });
+                }
+                catch (Exception moveEx)
+                {
+                    UpdateStatusLabel($"Error creating backup for {fileName}: {moveEx.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                UpdateStatusLabel($"Error cleaning up temp file {fileName}: {ex.Message}");
+            }
+            finally
+            {
+                openedFiles.Remove(filePath);
+            }
+        }
         private string ComputeFileHash(string filePath)
         {
             using (var md5 = System.Security.Cryptography.MD5.Create())
@@ -1862,160 +1878,6 @@ namespace QACORDMS.Client
                 return BitConverter.ToString(hash).Replace("-", "").ToLower();
             }
         }
-
-        private async Task MonitorAndReplaceFileOnCloseV2(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
-        {
-            try
-            {
-                bool fileChanged = false;
-                DateTime originalLastWriteTime = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.MinValue;
-
-                using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
-                {
-                    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
-                    watcher.Changed += (s, e) => fileChanged = true;
-                    watcher.EnableRaisingEvents = true;
-
-                    UpdateStatusLabel($"Monitoring changes in {fileName}...");
-                    await Task.Run(() => process.WaitForExit());
-                }
-
-                // Check for changes via FileSystemWatcher or last write time
-                if (!fileChanged && File.Exists(filePath))
-                {
-                    DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                    fileChanged = currentLastWriteTime > originalLastWriteTime;
-                }
-
-                if (fileChanged && File.Exists(filePath))
-                {
-                    await RunWithLoader(async () =>
-                    {
-                        UpdateStatusLabel($"Detected changes in {fileName}, updating...");
-                        await WaitForFileRelease(filePath);
-
-                        // Retry ReplaceFileAsync up to 3 times for transient errors
-                        bool uploadSuccess = false;
-                        int maxRetries = 3;
-                        int retryDelayMs = 2000;
-                        for (int attempt = 1; attempt <= maxRetries; attempt++)
-                        {
-                            try
-                            {
-                                var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                                if (response.IsSuccessStatusCode)
-                                {
-                                    uploadSuccess = true;
-                                    UpdateStatusLabel($"{fileName} updated successfully.");
-                                    break;
-                                }
-                                else
-                                {
-                                    string errorContent = await response.Content.ReadAsStringAsync();
-                                    UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
-                                    if (attempt < maxRetries)
-                                        await Task.Delay(retryDelayMs);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: {ex.Message}");
-                                if (attempt < maxRetries)
-                                    await Task.Delay(retryDelayMs);
-                            }
-                        }
-
-                        if (!uploadSuccess)
-                        {
-                            MessageBox.Show($"Failed to update {fileName} after {maxRetries} attempts. Changes may not be saved.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            UpdateStatusLabel($"Failed to update {fileName}.");
-                            return; // Keep the temp file for manual recovery
-                        }
-                    });
-                }
-                else
-                {
-                    UpdateStatusLabel($"No changes detected in {fileName}.");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
-            }
-            finally
-            {
-                if (File.Exists(filePath))
-                {
-                    try
-                    {
-                        await WaitForFileRelease(filePath);
-                        File.Delete(filePath);
-                        UpdateStatusLabel($"{fileName} temp file removed.");
-                    }
-                    catch (Exception ex)
-                    {
-                        UpdateStatusLabel($"Failed to delete temp file {fileName}: {ex.Message}");
-                        // Keep the file to allow manual recovery
-                    }
-                }
-                openedFiles.Remove(filePath);
-            }
-        }
-
-        private async Task MonitorAndReplaceFileOnCloseV1(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
-        {
-            try
-            {
-                bool fileChanged = false;
-                var fileChangedTcs = new TaskCompletionSource<bool>();
-
-                using (FileSystemWatcher watcher = new FileSystemWatcher(tempFolderPath, fileName))
-                {
-                    watcher.NotifyFilter = NotifyFilters.LastWrite;
-                    watcher.Changed += (s, e) =>
-                    {
-                        fileChanged = true;
-                        fileChangedTcs.TrySetResult(true);
-                    };
-                    watcher.EnableRaisingEvents = true;
-
-                    UpdateStatusLabel($"Monitoring changes in {fileName}...");
-                    await Task.Run(() => process.WaitForExit());
-                }
-
-                if (fileChanged)
-                {
-                    await RunWithLoader(async () =>
-                    {
-                        UpdateStatusLabel($"Detected changes in {fileName}, updating...");
-                        await WaitForFileRelease(filePath);
-                        await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                        UpdateStatusLabel($"{fileName} updated successfully.");
-                    });
-                }
-                else
-                {
-                    UpdateStatusLabel($"No changes detected in {fileName}.");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                UpdateStatusLabel($"Error updating {fileName}.");
-            }
-            finally
-            {
-                if (File.Exists(filePath))
-                {
-                    await WaitForFileRelease(filePath);
-                    File.Delete(filePath);
-                    openedFiles.Remove(filePath);
-                    UpdateStatusLabel($"{fileName} processed and temp file removed.");
-                }
-            }
-        }
-
         private async Task WaitForFileRelease(string filePath)
         {
             int maxRetries = 20; // Increased from 10
@@ -2287,7 +2149,19 @@ namespace QACORDMS.Client
 
             return $"{size:0.##} {sizes[order]}";
         }
+        private async void MainForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Back) //Backspace for safety
+            {
+                e.Handled = true;
+                BackMenuItem_Click(sender, new EventArgs());
+            }
+        }
 
+        private async Task openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ListView1_DoubleClick(sender, e);
+        }
         //private void CenterLoaderControls()
         //{
         //    if (loaderOverlay == null || loaderPictureBox == null || loaderLabel == null) return;
@@ -2334,58 +2208,6 @@ namespace QACORDMS.Client
         }
     }
 }
-
-//public class ListViewItemComparer : IComparer
-//{
-//    private int column;
-//    private SortOrder order;
-
-//    public ListViewItemComparer(int column, SortOrder order)
-//    {
-//        this.column = column;
-//        this.order = order;
-//    }
-
-//    public int Compare(object x, object y)
-//    {
-//        int returnVal = 0;
-//        ListViewItem itemX = (ListViewItem)x;
-//        ListViewItem itemY = (ListViewItem)y;
-
-//        switch (column)
-//        {
-//            case 0: // Name column
-//                returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
-//                break;
-//            case 1: // Type column
-//                returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
-//                break;
-//            case 2: // Size column
-//                long sizeX = ParseSize(itemX.SubItems[column].Text);
-//                long sizeY = ParseSize(itemY.SubItems[column].Text);
-//                returnVal = sizeX.CompareTo(sizeY);
-//                break;
-//        }
-
-//        if (order == SortOrder.Descending)
-//            returnVal = -returnVal;
-
-//        return returnVal;
-//    }
-
-//    private long ParseSize(string sizeText)
-//    {
-//        if (string.IsNullOrEmpty(sizeText))
-//            return 0;
-
-//        string[] parts = sizeText.Split(' ');
-//        if (parts.Length > 0 && long.TryParse(parts[0], out long size))
-//        {
-//            return size;
-//        }
-//        return 0;
-//    }
-//}
 
 public static class Prompt
 {

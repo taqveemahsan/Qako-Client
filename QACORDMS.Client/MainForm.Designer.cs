@@ -80,6 +80,8 @@
             clientsViewBox.TabIndex = 2;
             clientsViewBox.AfterSelect += ClientsViewBox_AfterSelect;
             clientsViewBox.DoubleClick += ClientsViewBox_DoubleClick;
+            clientsViewBox.DrawMode = TreeViewDrawMode.OwnerDrawText;
+            clientsViewBox.DrawNode += ClientsViewBox_DrawNode;
 
             // projectComboBox
             projectComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -133,6 +135,24 @@
             NewFolder.Name = "NewFolder";
             NewFolder.Size = new Size(61, 4);
             NewFolder.Opening += contextMenuStrip1_Opening;
+
+            //NewFolder.BackColor = Color.FromArgb(173, 216, 230);
+            //NewFolder.Font = new Font("Segoe UI", 11F);
+            //NewFolder.ForeColor = Color.FromArgb(0, 102, 204);
+            //NewFolder.ImageScalingSize = new Size(24, 24);
+            //NewFolder.Name = "NewFolder";
+            //NewFolder.Size = new Size(181, 26); // Increased size to accommodate "Open"
+            //NewFolder.Opening += contextMenuStrip1_Opening;
+
+            //// Add "Open" item
+            //var openToolStripMenuItem = new ToolStripMenuItem
+            //{
+            //    Name = "openToolStripMenuItem",
+            //    Size = new Size(180, 22),
+            //    Text = "Open"
+            //};
+            //openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click); // Placeholder event
+            //NewFolder.Items.Add(openToolStripMenuItem);
 
             // imageList1
             imageList1.ColorDepth = ColorDepth.Depth32Bit;
@@ -313,6 +333,9 @@
             searchButton.Text = "Search";
             searchButton.UseVisualStyleBackColor = false;
             searchButton.Click += SearchButton_Click;
+
+            this.KeyPreview = true; // Allow form to capture keys before controls
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
 
             // MainForm
             BackColor = Color.FromArgb(173, 216, 230);
