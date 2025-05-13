@@ -100,30 +100,3 @@ namespace QACORDMS.Client
         public DateTime SavedAt { get; set; }
     }
 }
-
-
-
-
-
-
-
-//using QACORDMS.Client.Helpers;
-
-//namespace QACORDMS.Client
-//{
-//    internal static class Program
-//    internal static class Program
-//    {
-//        /// <summary>
-//        ///  The main entry point for the application.
-//        /// </summary>
-//        [STAThread]
-//        static void Main()
-//        {
-//            // To customize application configuration such as set high DPI settings or default font,
-//            // see https://aka.ms/applicationconfiguration.
-//            ApplicationConfiguration.Initialize();
-//            Application.Run(new Login());
-//        }
-//    }
-//}

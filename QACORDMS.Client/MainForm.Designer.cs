@@ -251,7 +251,7 @@
             projectLabel.TabIndex = 10;
             projectLabel.Text = "Projects";
 
-            // loaderOverlay
+            //// loaderOverlay
             loaderOverlay.BackColor = Color.Transparent; // Fully transparent background
             loaderOverlay.Controls.Add(loaderPictureBox);
             loaderOverlay.Controls.Add(loaderLabel);
@@ -262,6 +262,14 @@
             loaderOverlay.TabIndex = 1;
             loaderOverlay.Visible = false; // Initially hidden
             loaderOverlay.BringToFront(); // Ensure it overlays other controls
+
+            // loaderOverlay
+            //loaderOverlay.BackColor = Color.Transparent; // <-- No background dimming
+            //loaderOverlay.Size = new Size(100, 100); // Small size, not full screen
+            //loaderOverlay.Location = new Point((this.ClientSize.Width - 100) / 2, (this.ClientSize.Height - 100) / 2);
+            //loaderOverlay.Anchor = AnchorStyles.None;
+            //loaderOverlay.Visible = false; // Default hidden
+            //loaderOverlay.Controls.Add(loaderPictureBox);
 
             // loaderPictureBox
             loaderPictureBox.BackColor = Color.Transparent;

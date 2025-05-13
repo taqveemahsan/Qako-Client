@@ -776,57 +776,57 @@ namespace QACORDMS.Client
             }
         }
 
-        //private async void refreshMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    await RunWithLoader(async () =>
-        //    {
-        //        try
-        //        {
-        //            var clientsForm = new ClientsForm(_apiHelper);
-        //            clientsForm.ShowDialog();
-        //            LoadClientsAsync();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            MessageBox.Show($"Failed to open Clients form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //        }
-        //    });
-        //}
-
         private async void refreshMenuItem_Click(object sender, EventArgs e)
         {
-            try
+            await RunWithLoader(async () =>
             {
-                UpdateStatusLabel("Refreshing clients...");
-                await RunWithLoader(async () =>
+                try
                 {
-                    // Fetch clients from API (example implementation)
-                    var response = await _apiHelper.GetClientsAsync(); // Assume this method exists
-                    var clients = response.Clients;
-
-                    // Clear existing nodes
-                    clientsViewBox.Nodes.Clear();
-
-                    // Populate TreeView with clients and folder sizes
-                    foreach (var client in clients)
-                    {
-                        string nodeText = $"{client.Name} ({client.FolderSize})";
-                        TreeNode node = new TreeNode(nodeText)
-                        {
-                            Tag = client // Store client object for later use
-                        };
-                        clientsViewBox.Nodes.Add(node);
-                    }
-
-                    UpdateStatusLabel($"Loaded {clients.Count} clients.");
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to refresh clients: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                UpdateStatusLabel("Error refreshing clients.");
-            }
+                    var clientsForm = new ClientsForm(_apiHelper);
+                    clientsForm.ShowDialog();
+                    LoadClientsAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to open Clients form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            });
         }
+
+        //private async void refreshMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        UpdateStatusLabel("Refreshing clients...");
+        //        await RunWithLoader(async () =>
+        //        {
+        //            // Fetch clients from API (example implementation)
+        //            var response = await _apiHelper.GetClientsAsync(); // Assume this method exists
+        //            var clients = response.Clients;
+
+        //            // Clear existing nodes
+        //            clientsViewBox.Nodes.Clear();
+
+        //            // Populate TreeView with clients and folder sizes
+        //            foreach (var client in clients)
+        //            {
+        //                string nodeText = $"{client.Name} ({client.FolderSize})";
+        //                TreeNode node = new TreeNode(nodeText)
+        //                {
+        //                    Tag = client // Store client object for later use
+        //                };
+        //                clientsViewBox.Nodes.Add(node);
+        //            }
+
+        //            UpdateStatusLabel($"Loaded {clients.Count} clients.");
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Failed to refresh clients: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        UpdateStatusLabel("Error refreshing clients.");
+        //    }
+        //}
 
         private async void UploadFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -1617,6 +1617,142 @@ namespace QACORDMS.Client
         }
 
         private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        {
+            try
+            {
+                bool fileChanged = false;
+                DateTime originalLastWriteTime = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.MinValue;
+                string originalHash = File.Exists(filePath) ? ComputeFileHash(filePath) : null;
+
+                UpdateStatusLabel($"Monitoring changes in {fileName}...");
+
+                using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+                {
+                    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
+                    watcher.Changed += async (s, e) =>
+                    {
+                        try
+                        {
+                            if (File.Exists(filePath))
+                            {
+                                string currentHash = ComputeFileHash(filePath);
+                                if (currentHash != originalHash)
+                                {
+                                    fileChanged = true;
+                                    UpdateStatusLabel($"Immediate change detected in {fileName}, queuing upload...");
+                                    await RunWithLoader(async () =>
+                                    {
+                                        await WaitForFileRelease(filePath);
+                                        var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+                                        if (response.IsSuccessStatusCode)
+                                        {
+                                            UpdateStatusLabel($"{fileName} updated successfully.");
+                                            originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                                            originalHash = currentHash;
+                                        }
+                                        else
+                                        {
+                                            string errorContent = await response.Content.ReadAsStringAsync();
+                                            UpdateStatusLabel($"Failed to update {fileName}: {errorContent}");
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            UpdateStatusLabel($"Error in FileSystemWatcher for {fileName}: {ex.Message}");
+                        }
+                    };
+                    watcher.EnableRaisingEvents = true;
+
+                    // Wait for the process to exit
+                    await Task.Run(() => process.WaitForExit());
+
+                    // Final check for changes after process exit
+                    if (File.Exists(filePath))
+                    {
+                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                        string currentHash = ComputeFileHash(filePath);
+                        if (currentLastWriteTime > originalLastWriteTime || currentHash != originalHash)
+                        {
+                            fileChanged = true;
+                            UpdateStatusLabel($"Final change detected in {fileName} on process exit, uploading...");
+                            await RunWithLoader(async () =>
+                            {
+                                await WaitForFileRelease(filePath);
+                                int maxRetries = 3;
+                                int retryDelayMs = 2000;
+                                bool uploadSuccess = false;
+
+                                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                                {
+                                    try
+                                    {
+                                        UpdateStatusLabel($"Uploading {fileName} (attempt {attempt}/{maxRetries})...");
+                                        var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+                                        if (response.IsSuccessStatusCode)
+                                        {
+                                            UpdateStatusLabel($"{fileName} updated successfully.");
+                                            uploadSuccess = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            string errorContent = await response.Content.ReadAsStringAsync();
+                                            UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: HTTP {response.StatusCode}, {errorContent}");
+                                            if (attempt < maxRetries)
+                                                await Task.Delay(retryDelayMs);
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        UpdateStatusLabel($"Attempt {attempt} failed to update {fileName}: {ex.Message}");
+                                        if (attempt < maxRetries)
+                                            await Task.Delay(retryDelayMs);
+                                    }
+                                }
+
+                                if (!uploadSuccess)
+                                {
+                                    MessageBox.Show($"Failed to update {fileName} after {maxRetries} attempts. Changes may not be saved.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    UpdateStatusLabel($"Failed to update {fileName}.");
+                                }
+                            });
+                        }
+                    }
+
+                    if (!fileChanged)
+                    {
+                        UpdateStatusLabel($"No changes detected in {fileName}.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+            }
+            finally
+            {
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        await WaitForFileRelease(filePath);
+                        File.Delete(filePath);
+                        UpdateStatusLabel($"{fileName} temp file removed.");
+                    }
+                    catch (Exception ex)
+                    {
+                        UpdateStatusLabel($"Failed to delete temp file {fileName}: {ex.Message}");
+                    }
+                }
+                openedFiles.Remove(filePath);
+            }
+        }
+
+        private async Task MonitorAndReplaceFileOnCloseV3(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
         {
             try
             {

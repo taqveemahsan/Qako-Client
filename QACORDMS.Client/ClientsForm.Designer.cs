@@ -15,6 +15,7 @@
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             clientsGridView = new DataGridView();
             //addProjectButtonColumn = new DataGridViewButtonColumn();
             deleteButtonColumn = new DataGridViewButtonColumn();
@@ -27,6 +28,7 @@
             dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)clientsGridView).BeginInit();
             SuspendLayout();
             // 
@@ -46,7 +48,7 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             clientsGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             clientsGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            clientsGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, deleteButtonColumn });
+            clientsGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, deleteButtonColumn });
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = SystemColors.Window;
             dataGridViewCellStyle3.Font = new Font("Segoe UI", 10F);
@@ -157,14 +159,14 @@
             // dataGridViewTextBoxColumn1
             // 
             dataGridViewTextBoxColumn1.HeaderText = "Name";
-            dataGridViewTextBoxColumn1.MinimumWidth = 100; // Minimum width
+            dataGridViewTextBoxColumn1.MinimumWidth = 80; // Minimum width
             dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
             dataGridViewTextBoxColumn1.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
                                                                                            // 
                                                                                            // dataGridViewTextBoxColumn2
                                                                                            // 
             dataGridViewTextBoxColumn2.HeaderText = "Email";
-            dataGridViewTextBoxColumn2.MinimumWidth = 100; // Minimum width
+            dataGridViewTextBoxColumn2.MinimumWidth = 80; // Minimum width
             dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
             dataGridViewTextBoxColumn2.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
                                                                                            // 
@@ -174,6 +176,14 @@
             dataGridViewTextBoxColumn3.MinimumWidth = 80; // Minimum width
             dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
             dataGridViewTextBoxColumn3.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+                                                                                           // 
+                                                                                           // ClientsForm
+                                                                                           // 
+
+            dataGridViewTextBoxColumn4.HeaderText = "Folder Size";
+            dataGridViewTextBoxColumn4.MinimumWidth = 80; // Minimum width
+            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
+            dataGridViewTextBoxColumn4.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
                                                                                            // 
                                                                                            // ClientsForm
                                                                                            // 
@@ -201,6 +211,7 @@
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
         private DataGridViewButtonColumn deleteButtonColumn;
     }
 }
