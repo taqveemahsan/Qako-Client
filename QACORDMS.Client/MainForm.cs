@@ -12,7 +12,9 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-using OfficeOpenXml;
+using OpenXml = DocumentFormat.OpenXml;
+using OpenXmlPackaging = DocumentFormat.OpenXml.Packaging;
+using OpenXmlSpreadsheet = DocumentFormat.OpenXml.Spreadsheet;
 
 namespace QACORDMS.Client
 {
@@ -139,7 +141,7 @@ namespace QACORDMS.Client
             int y = (loaderPictureBox.Height - size) / 2;
             int thickness = 8;
 
-            using (Pen bgPen = new Pen(Color.FromArgb(100, 255, 255, 255), thickness))
+            using (Pen bgPen = new Pen(System.Drawing.Color.FromArgb(100, 255, 255, 255), thickness))
             {
                 g.DrawArc(bgPen, x, y, size, size, 0, 360);
             }
@@ -984,7 +986,6 @@ namespace QACORDMS.Client
                 MessageBox.Show("Please select a project first.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             await RunWithLoader(async () =>
             {
                 try
@@ -997,19 +998,14 @@ namespace QACORDMS.Client
 
                         string tempFilePath = Path.Combine(tempFolderPath, fileName);
 
-                        // Create a valid Excel file using EPPlus only if extension is xlsx
-                        if (extension.ToLower() == "xlsx")
+                        // Handle different file types
+                        if (extension.Equals("xlsx", StringComparison.OrdinalIgnoreCase))
                         {
-                            ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Required for EPPlus
-                            using (var package = new ExcelPackage())
-                            {
-                                var worksheet = package.Workbook.Worksheets.Add("Sheet1");
-                                package.SaveAs(new FileInfo(tempFilePath));
-                            }
+                            CreateEmptyExcelFile(tempFilePath);
                         }
                         else
                         {
-                            File.WriteAllText(tempFilePath, ""); // Keep original behavior for other file types
+                            File.WriteAllText(tempFilePath, "");
                         }
 
                         UpdateStatusLabel($"Uploading: {fileName}...");
@@ -1028,6 +1024,30 @@ namespace QACORDMS.Client
                     UpdateStatusLabel("Error creating and uploading file.");
                 }
             });
+        }
+
+        private void CreateEmptyExcelFile(string filePath)
+        {
+            // Create a minimal valid Excel file using OpenXML with aliases to avoid conflicts
+            using (var document = OpenXmlPackaging.SpreadsheetDocument.Create(filePath, OpenXml.SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = document.AddWorkbookPart();
+                workbookPart.Workbook = new OpenXmlSpreadsheet.Workbook();
+
+                var worksheetPart = workbookPart.AddNewPart<OpenXmlPackaging.WorksheetPart>();
+                worksheetPart.Worksheet = new OpenXmlSpreadsheet.Worksheet(new OpenXmlSpreadsheet.SheetData());
+
+                var sheets = workbookPart.Workbook.AppendChild(new OpenXmlSpreadsheet.Sheets());
+                var sheet = new OpenXmlSpreadsheet.Sheet()
+                {
+                    Id = workbookPart.GetIdOfPart(worksheetPart),
+                    SheetId = 1,
+                    Name = "Sheet1"
+                };
+                sheets.Append(sheet);
+
+                workbookPart.Workbook.Save();
+            }
         }
 
         private async Task CreateNewFileV1(string extension, string fileType)
@@ -1625,7 +1645,7 @@ namespace QACORDMS.Client
                                     // Schedule upload after a delay to ensure file is stable
                                     _ = Task.Run(async () =>
                                     {
-                                        await Task.Delay(200); // Wait for file to be fully saved
+                                        //await Task.Delay(200); // Wait for file to be fully saved
                                         await UploadFileWithRetry(filePath, fileId, fileName);
 
                                         // Update reference values after successful upload
@@ -1656,13 +1676,13 @@ namespace QACORDMS.Client
 
                     // Important: Wait longer for Office apps to fully release files
                     UpdateStatusLabel($"Process exited for {fileName}. Waiting for file to be fully saved...");
-                    await Task.Delay(1000); // Increased to 10 seconds for Office apps
+                    //await Task.Delay(1000); // Increased to 10 seconds for Office apps
 
                     // Force close any remaining processes that might be holding the file
                     await ForceCloseProcesses(filePath);
 
                     // Final comprehensive check for changes
-                    await Task.Delay(1000); // Additional wait after force-closing processes
+                    //await Task.Delay(1000); // Additional wait after force-closing processes
 
                     if (File.Exists(filePath))
                     {
@@ -1782,7 +1802,7 @@ namespace QACORDMS.Client
                         }
 
                         // Wait for process to exit
-                        if (!process.WaitForExit(1000))
+                        if (!process.WaitForExit(200))
                         {
                             UpdateStatusLabel($"Process {process.ProcessName} did not exit, forcing...");
                             process.Kill();
@@ -1814,7 +1834,7 @@ namespace QACORDMS.Client
                 await WaitForFileRelease(filePath);
 
                 int maxRetries = 3;
-                int retryDelayMs = 2000;
+                int retryDelayMs = 1000;
                 bool uploadSuccess = false;
 
                 for (int attempt = 1; attempt <= maxRetries; attempt++)
