@@ -12,6 +12,8 @@ namespace QACORDMS.Client
         [STAThread]
         static void Main()
         {
+            //System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls13;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 

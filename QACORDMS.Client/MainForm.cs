@@ -3,6 +3,7 @@ using QACORDMS.Client.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -11,7 +12,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-
+using OfficeOpenXml;
 
 namespace QACORDMS.Client
 {
@@ -995,11 +996,63 @@ namespace QACORDMS.Client
                             fileName += $".{extension}";
 
                         string tempFilePath = Path.Combine(tempFolderPath, fileName);
+
+                        // Create a valid Excel file using EPPlus only if extension is xlsx
+                        if (extension.ToLower() == "xlsx")
+                        {
+                            ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Required for EPPlus
+                            using (var package = new ExcelPackage())
+                            {
+                                var worksheet = package.Workbook.Worksheets.Add("Sheet1");
+                                package.SaveAs(new FileInfo(tempFilePath));
+                            }
+                        }
+                        else
+                        {
+                            File.WriteAllText(tempFilePath, ""); // Keep original behavior for other file types
+                        }
+
+                        UpdateStatusLabel($"Uploading: {fileName}...");
+                        string uploadedFileId = await _apiHelper.UploadFileAsync(tempFilePath, CurrentFolderId ?? _selectedProject.GoogleDriveFolderId);
+                        UpdateStatusLabel("Upload complete.");
+
+                        if (File.Exists(tempFilePath))
+                            File.Delete(tempFilePath);
+
+                        await RefreshFileList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to create and upload file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UpdateStatusLabel("Error creating and uploading file.");
+                }
+            });
+        }
+
+        private async Task CreateNewFileV1(string extension, string fileType)
+        {
+            if (string.IsNullOrEmpty(_selectedProject?.GoogleDriveFolderId))
+            {
+                MessageBox.Show("Please select a project first.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            await RunWithLoader(async () =>
+            {
+                try
+                {
+                    string fileName = Prompt.ShowDialog($"Enter {fileType} name:", $"New {fileType}");
+                    if (!string.IsNullOrEmpty(fileName))
+                    {
+                        if (!fileName.EndsWith($".{extension}", StringComparison.OrdinalIgnoreCase))
+                            fileName += $".{extension}";
+
+                        string tempFilePath = Path.Combine(tempFolderPath, fileName);
                         File.WriteAllText(tempFilePath, "");
 
                         UpdateStatusLabel($"Uploading: {fileName}...");
                         string uploadedFileId = await _apiHelper.UploadFileAsync(tempFilePath, CurrentFolderId ?? _selectedProject.GoogleDriveFolderId);
-                        //MessageBox.Show($"File '{fileName}' uploaded successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         UpdateStatusLabel("Upload complete.");
 
                         if (File.Exists(tempFilePath))
@@ -1572,7 +1625,7 @@ namespace QACORDMS.Client
                                     // Schedule upload after a delay to ensure file is stable
                                     _ = Task.Run(async () =>
                                     {
-                                        await Task.Delay(1000); // Wait for file to be fully saved
+                                        await Task.Delay(200); // Wait for file to be fully saved
                                         await UploadFileWithRetry(filePath, fileId, fileName);
 
                                         // Update reference values after successful upload
@@ -1603,13 +1656,13 @@ namespace QACORDMS.Client
 
                     // Important: Wait longer for Office apps to fully release files
                     UpdateStatusLabel($"Process exited for {fileName}. Waiting for file to be fully saved...");
-                    await Task.Delay(10000); // Increased to 10 seconds for Office apps
+                    await Task.Delay(1000); // Increased to 10 seconds for Office apps
 
                     // Force close any remaining processes that might be holding the file
                     await ForceCloseProcesses(filePath);
 
                     // Final comprehensive check for changes
-                    await Task.Delay(2000); // Additional wait after force-closing processes
+                    await Task.Delay(1000); // Additional wait after force-closing processes
 
                     if (File.Exists(filePath))
                     {
@@ -1729,7 +1782,7 @@ namespace QACORDMS.Client
                         }
 
                         // Wait for process to exit
-                        if (!process.WaitForExit(5000))
+                        if (!process.WaitForExit(1000))
                         {
                             UpdateStatusLabel($"Process {process.ProcessName} did not exit, forcing...");
                             process.Kill();
@@ -1745,7 +1798,7 @@ namespace QACORDMS.Client
                 }
 
                 // Give some time for handles to be released
-                await Task.Delay(3000);
+                await Task.Delay(1000);
             }
             catch (Exception ex)
             {
@@ -1840,7 +1893,7 @@ namespace QACORDMS.Client
                     // Schedule cleanup for later
                     _ = Task.Run(async () =>
                     {
-                        await Task.Delay(60000); // Wait 1 minute
+                        await Task.Delay(30000); // Wait 1 minute
                         try
                         {
                             if (File.Exists(backupPath))
