@@ -40,6 +40,12 @@ namespace QACORDMS.Client
         private int _rotationAngle = 0;
         private System.Windows.Forms.Timer _animationTimer;
 
+        private readonly string currentVersion = "1.0.2"; // Current app version
+        private readonly string updateApiUrl = "https://test.ibt-learning.com/api/Client/check-update";
+        //private Button updateButton; // Update Available button
+        private string latestVersion;
+        private string downloadUrl;
+
         private const int HDM_GETITEM = 0x1203; // HDM_GETITEMW
         private const int HDM_SETITEM = 0x1204; // HDM_SETITEMW
         private const int HDF_SORTUP = 0x0400;
@@ -105,7 +111,23 @@ namespace QACORDMS.Client
             WindowState = FormWindowState.Maximized;
             CustomizeUIForRole();
 
+            //// Initialize Update Available button
+            //updateButton = new Button
+            //{
+            //    Text = "Update Available!",
+            //    Size = new Size(150, 30),
+            //    Location = new Point(10, 10),
+            //    BackColor = Color.Orange,
+            //    ForeColor = Color.White,
+            //    Visible = false
+            //};
+            //updateButton.Click += UpdateButton_Click;
+            //this.Controls.Add(updateButton);
+
             CenterLoaderControls();
+
+            // Check for updates on form load
+            CheckForUpdatesAsync();
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -2203,6 +2225,9 @@ namespace QACORDMS.Client
             searchTextBox.Location = new Point(backButtonRight + margin, searchTextBox.Location.Y);
             searchTextBox.Width = formWidth - backButtonRight - logoutButtonWidth - searchButtonWidth - (margin * 4);
             searchButton.Location = new Point(searchTextBox.Right + margin, searchButton.Location.Y);
+
+            //if (updateButton != null)
+            //    updateButton.Location = new Point(formWidth - 434 - margin, 111);
         }
 
         private string ConvertSize(long? sizeInBytes)
@@ -2278,6 +2303,163 @@ namespace QACORDMS.Client
         private Image GetLoadingFrame(int frameIndex)
         {
             return _loadingFrames[frameIndex];
+        }
+
+        private async void CheckForUpdatesAsync()
+        {
+            await RunWithLoader(async () =>
+            {
+                try
+                {
+                    UpdateStatusLabel("Checking for updates...");
+                    using (var client = new HttpClient())
+                    {
+                        var response = await client.GetAsync(updateApiUrl);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            UpdateStatusLabel($"Update check failed: HTTP {response.StatusCode}");
+                            return;
+                        }
+
+                        var json = await response.Content.ReadAsStringAsync();
+                        var updateInfo = System.Text.Json.JsonSerializer.Deserialize<UpdateInfo>(json);
+
+                        latestVersion = updateInfo.version;
+                        downloadUrl = updateInfo.downloadUrl;
+
+                        if (IsVersionHigher(latestVersion, currentVersion))
+                        {
+                            updateMenuItem.Enabled = true;
+                            UpdateStatusLabel($"Update available: Version {latestVersion}");
+                        }
+                        else
+                        {
+                            updateMenuItem.Enabled = false;
+                            UpdateStatusLabel("You are running the latest version.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatusLabel($"Error checking updates: {ex.Message}");
+                }
+            });
+        }
+
+        // Helper class for deserialization
+        private class UpdateInfo
+        {
+            public string version { get; set; }
+            public string downloadUrl { get; set; }
+        }
+
+        // Version comparison logic
+        private bool IsVersionHigher(string serverVersion, string currentVersion)
+        {
+            if (string.IsNullOrEmpty(serverVersion) || string.IsNullOrEmpty(currentVersion))
+                return false;
+
+            var serverParts = serverVersion.Split('.').Select(int.Parse).ToArray();
+            var currentParts = currentVersion.Split('.').Select(int.Parse).ToArray();
+
+            for (int i = 0; i < Math.Min(serverParts.Length, currentParts.Length); i++)
+            {
+                if (serverParts[i] > currentParts[i])
+                    return true;
+                if (serverParts[i] < currentParts[i])
+                    return false;
+            }
+
+            return serverParts.Length > currentParts.Length;
+        }
+
+        private async void UpdateMenuItem_Click(object sender, EventArgs e)
+        {
+            await RunWithLoader(async () =>
+            {
+                try
+                {
+                    UpdateStatusLabel($"Downloading update {latestVersion}...");
+                    string installerPath = Path.Combine(tempFolderPath, $"DMS_Update_{latestVersion}.exe");
+
+                    using (var client = new HttpClient())
+                    {
+                        // Set custom timeout (e.g., 5 minutes for 152 MB file)
+                        client.Timeout = TimeSpan.FromMinutes(5);
+
+                        var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            UpdateStatusLabel($"Download failed: HTTP {response.StatusCode}");
+                            MessageBox.Show("Failed to download the update.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        var contentLength = response.Content.Headers.ContentLength ?? -1;
+                        using (var stream = await response.Content.ReadAsStreamAsync())
+                        using (var fileStream = new FileStream(installerPath, FileMode.Create, FileAccess.Write))
+                        {
+                            var progress = new Progress<double>(percent =>
+                                UpdateStatusLabel($"Downloading update {latestVersion}... ({percent:F1}%)"));
+                            await CopyStreamWithProgress(stream, fileStream, contentLength, progress);
+                        }
+                    }
+                    //using (var client = new HttpClient())
+                    //{
+                    //    var response = await client.GetAsync(downloadUrl);
+                    //    if (!response.IsSuccessStatusCode)
+                    //    {
+                    //        UpdateStatusLabel($"Download failed: HTTP {response.StatusCode}");
+                    //        MessageBox.Show("Failed to download the update.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //        return;
+                    //    }
+
+                    //    using (var stream = await response.Content.ReadAsStreamAsync())
+                    //    using (var fileStream = new FileStream(installerPath, FileMode.Create, FileAccess.Write))
+                    //    {
+                    //        await stream.CopyToAsync(fileStream);
+                    //    }
+                    //}
+
+                    UpdateStatusLabel($"Installing update {latestVersion}...");
+                    var processInfo = new ProcessStartInfo
+                    {
+                        FileName = installerPath,
+                        Arguments = "/SILENT /NOCANCEL",
+                        UseShellExecute = true
+                    };
+
+                    Process.Start(processInfo);
+                    UpdateStatusLabel("Update started. Application will restart after installation.");
+
+                    Application.Exit();
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatusLabel($"Error installing update: {ex.Message}");
+                    MessageBox.Show($"Failed to install update: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            });
+        }
+
+        // Helper method to copy stream with progress
+        private async Task CopyStreamWithProgress(Stream source, Stream destination, long contentLength, IProgress<double> progress)
+        {
+            const int bufferSize = 81920; // 80 KB buffer for better performance
+            byte[] buffer = new byte[bufferSize];
+            long totalBytesRead = 0;
+
+            int bytesRead;
+            while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                await destination.WriteAsync(buffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                if (contentLength > 0)
+                {
+                    double percent = (double)totalBytesRead / contentLength * 100;
+                    progress?.Report(percent);
+                }
+            }
         }
     }
 }
