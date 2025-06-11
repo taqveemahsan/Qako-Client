@@ -332,16 +332,23 @@ namespace QACORDMS.Client
 
         private string FormatCompanyTypeName(string enumName)
         {
+            // Return default value if input is null or empty
+            if (string.IsNullOrWhiteSpace(enumName))
+            {
+                return "Public Company";
+            }
+
             // Custom mappings for specific enum values that don't split nicely
             var customMappings = new Dictionary<string, string>
             {
                 { "PrivateLable", "Private Label" },
+                { "PrivateLabel", "Private Label" },
                 { "PublicComp", "Public Company" },
                 { "ForeignCompanies", "Foreign Companies" },
                 { "PartnershipFirms", "Partnership Firms" },
                 { "NonProfitOrganizations", "Non-Profit Organizations" },
-                { "NBFC", "NBFC" }, // Keep as-is since it's an acronym
-                { "PICS", "PICS" }, // Keep as-is since it's an acronym
+                { "NBFC", "NBFC" },
+                { "PICS", "PICS" },
                 { "ProvidentGratuityFunds", "Provident & Gratuity Funds" },
                 { "IndividualsSoleProprietors", "Individuals & Sole Proprietors" },
                 { "Others", "Others" }
@@ -354,10 +361,40 @@ namespace QACORDMS.Client
             }
 
             // Fallback: Split camel-case names and join with spaces
-            // e.g., "ThisIsATest" -> "This Is A Test"
             var result = System.Text.RegularExpressions.Regex.Replace(enumName, "([a-z])([A-Z])", "$1 $2");
             return result;
         }
+
+
+        //private string FormatCompanyTypeName(string enumName)
+        //{
+        //    // Custom mappings for specific enum values that don't split nicely
+        //    var customMappings = new Dictionary<string, string>
+        //    {
+        //        { "PrivateLable", "Private Label" },
+        //        { "PrivateLabel", "Private Label" },
+        //        { "PublicComp", "Public Company" },
+        //        { "ForeignCompanies", "Foreign Companies" },
+        //        { "PartnershipFirms", "Partnership Firms" },
+        //        { "NonProfitOrganizations", "Non-Profit Organizations" },
+        //        { "NBFC", "NBFC" }, // Keep as-is since it's an acronym
+        //        { "PICS", "PICS" }, // Keep as-is since it's an acronym
+        //        { "ProvidentGratuityFunds", "Provident & Gratuity Funds" },
+        //        { "IndividualsSoleProprietors", "Individuals & Sole Proprietors" },
+        //        { "Others", "Others" }
+        //    };
+
+        //    // If the enum name has a custom mapping, return it
+        //    if (customMappings.TryGetValue(enumName, out var formattedName))
+        //    {
+        //        return formattedName;
+        //    }
+
+        //    // Fallback: Split camel-case names and join with spaces
+        //    // e.g., "ThisIsATest" -> "This Is A Test"
+        //    var result = System.Text.RegularExpressions.Regex.Replace(enumName, "([a-z])([A-Z])", "$1 $2");
+        //    return result;
+        //}
         private void UpdateClientsViewBox(List<Helpers.Client> clientsToDisplay)
         {
             if (clientsViewBox.InvokeRequired)
