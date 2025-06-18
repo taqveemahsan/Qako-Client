@@ -2463,7 +2463,8 @@ namespace QACORDMS.Client
             for (int i = 0; i < Math.Max(serverComponents.Length, currentComponents.Length); i++)
             {
                 // If one version has more components, it's considered higher
-                if (i >= serverComponents.Length) return false;
+                        Arguments = "/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART",
+                        Verb = "runas"
                 if (i >= currentComponents.Length) return true;
 
                 // Convert components to integers

@@ -17,7 +17,7 @@ It allows management of clients and projects and includes an automatic update fe
 ```
 
 ## Auto Update
-On startup the application checks the API specified in `appsettings.json` for a newer version. If a higher version is available an update menu item is enabled. Selecting it downloads the installer and launches it silently. The installer is started with `/SILENT /NOCANCEL /NORESTART` so any required restart will occur after installation finishes.
+On startup the application checks the API specified in `appsettings.json` for a newer version. If a higher version is available an update menu item is enabled. Selecting it downloads the installer and launches it silently as administrator. The installer is started with `/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART` so open programs aren't closed and any required restart is suppressed.
 
 ## Repository Layout
 - `QACORDMS.Client` – Windows Forms client source code.
