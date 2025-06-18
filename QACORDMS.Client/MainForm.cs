@@ -2,6 +2,8 @@ using Microsoft.VisualBasic.ApplicationServices;
 using QACORDMS.Client.Helpers;
 using System;
 using System.Collections;
+using System.Reflection;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -40,8 +42,8 @@ namespace QACORDMS.Client
         private int _rotationAngle = 0;
         private System.Windows.Forms.Timer _animationTimer;
 
-        private readonly string currentVersion = "1.0.2"; // Current app version
-        private readonly string updateApiUrl = "https://test.ibt-learning.com/api/Client/check-update";
+        private readonly string currentVersion;
+        private readonly string updateApiUrl;
         //private Button updateButton; // Update Available button
         private string latestVersion;
         private string downloadUrl;
@@ -65,6 +67,9 @@ namespace QACORDMS.Client
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             _userRole = userRole;
             InitializeComponent();
+            var settings = LoadSettings();
+            currentVersion = settings.CurrentVersion ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+            updateApiUrl = settings.UpdateApiUrl ?? "https://test.ibt-learning.com/api/Client/check-update";
 
             //LoadAnimationFrames();
 
@@ -2458,7 +2463,8 @@ namespace QACORDMS.Client
             for (int i = 0; i < Math.Max(serverComponents.Length, currentComponents.Length); i++)
             {
                 // If one version has more components, it's considered higher
-                if (i >= serverComponents.Length) return false;
+                        Arguments = "/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART",
+                        Verb = "runas"
                 if (i >= currentComponents.Length) return true;
 
                 // Convert components to integers
@@ -2492,6 +2498,27 @@ namespace QACORDMS.Client
 
             //return serverParts.Length > currentParts.Length;
         }
+        private class AppSettings
+        {
+            public string CurrentVersion { get; set; }
+            public string UpdateApiUrl { get; set; }
+        }
+
+        private AppSettings LoadSettings()
+        {
+            try
+            {
+                string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+                if (File.Exists(configPath))
+                {
+                    var json = File.ReadAllText(configPath);
+                    return JsonSerializer.Deserialize<AppSettings>(json);
+                }
+            }
+            catch { }
+            return new AppSettings();
+        }
+
 
         // Alternative approach - uninstall first, then install
         private async void UpdateMenuItem_Click(object sender, EventArgs e)
