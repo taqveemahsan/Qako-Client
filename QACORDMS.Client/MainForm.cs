@@ -2,6 +2,8 @@ using Microsoft.VisualBasic.ApplicationServices;
 using QACORDMS.Client.Helpers;
 using System;
 using System.Collections;
+using System.Reflection;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -40,8 +42,8 @@ namespace QACORDMS.Client
         private int _rotationAngle = 0;
         private System.Windows.Forms.Timer _animationTimer;
 
-        private readonly string currentVersion = "1.0.2"; // Current app version
-        private readonly string updateApiUrl = "https://test.ibt-learning.com/api/Client/check-update";
+        private readonly string currentVersion;
+        private readonly string updateApiUrl;
         //private Button updateButton; // Update Available button
         private string latestVersion;
         private string downloadUrl;
@@ -65,6 +67,9 @@ namespace QACORDMS.Client
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             _userRole = userRole;
             InitializeComponent();
+            var settings = LoadSettings();
+            currentVersion = settings.CurrentVersion ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+            updateApiUrl = settings.UpdateApiUrl ?? "https://test.ibt-learning.com/api/Client/check-update";
 
             //LoadAnimationFrames();
 
@@ -263,7 +268,7 @@ namespace QACORDMS.Client
                 SendMessage(header, HDM_GETITEM, (IntPtr)columnIndex, ref hdItem);
 
                 // Preserve the existing format (e.g., alignment) and only modify the sort arrow
-                hdItem.mask = HDI_FORMAT; // We’re updating the format
+                hdItem.mask = HDI_FORMAT; // WeÂ’re updating the format
                 hdItem.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN); // Clear existing sort arrows
                 hdItem.fmt |= sortOrder switch
                 {
@@ -2409,6 +2414,27 @@ namespace QACORDMS.Client
 
             return serverParts.Length > currentParts.Length;
         }
+        private class AppSettings
+        {
+            public string CurrentVersion { get; set; }
+            public string UpdateApiUrl { get; set; }
+        }
+
+        private AppSettings LoadSettings()
+        {
+            try
+            {
+                string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+                if (File.Exists(configPath))
+                {
+                    var json = File.ReadAllText(configPath);
+                    return JsonSerializer.Deserialize<AppSettings>(json);
+                }
+            }
+            catch { }
+            return new AppSettings();
+        }
+
 
         private async void UpdateMenuItem_Click(object sender, EventArgs e)
         {
@@ -2462,7 +2488,7 @@ namespace QACORDMS.Client
                     var processInfo = new ProcessStartInfo
                     {
                         FileName = installerPath,
-                        Arguments = "/SILENT /NOCANCEL",
+                        Arguments = "/SILENT /NOCANCEL /NORESTART",
                         UseShellExecute = true
                     };
 
