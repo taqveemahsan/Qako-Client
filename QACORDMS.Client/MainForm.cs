@@ -268,7 +268,7 @@ namespace QACORDMS.Client
                 SendMessage(header, HDM_GETITEM, (IntPtr)columnIndex, ref hdItem);
 
                 // Preserve the existing format (e.g., alignment) and only modify the sort arrow
-                hdItem.mask = HDI_FORMAT; // Were updating the format
+                hdItem.mask = HDI_FORMAT; // We�re updating the format
                 hdItem.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN); // Clear existing sort arrows
                 hdItem.fmt |= sortOrder switch
                 {
@@ -1037,6 +1037,10 @@ namespace QACORDMS.Client
                     var renameClientItem = new ToolStripMenuItem("Rename");
                     renameClientItem.Click += async (s, e) => await RenameClient_Click(s, e);
                     menu.Items.Add(renameClientItem);
+
+                    var deleteClientItem = new ToolStripMenuItem("Delete");
+                    deleteClientItem.Click += async (s, e) => await deleteClient_Click(s, e);
+                    menu.Items.Add(deleteClientItem);
                 }
             };
 
@@ -2316,7 +2320,60 @@ namespace QACORDMS.Client
         //    int labelY = pictureBoxY + loaderPictureBox.Height + 10; // 10px below the picture box
         //    loaderLabel.Location = new Point(labelX, labelY);
         //}
+        private async Task deleteClient_Click(object sender, EventArgs e)
+        {
+            if (clientsViewBox.SelectedNode == null || !(clientsViewBox.SelectedNode.Tag is Helpers.Client))
+            {
+                MessageBox.Show("Please select a client to delete.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
+            var selectedNode = clientsViewBox.SelectedNode;
+            var client = selectedNode.Tag as Helpers.Client;
+            if (client == null || client.Id == Guid.Empty)
+            {
+                MessageBox.Show("Invalid client selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var result = MessageBox.Show($"Are you sure you want to delete client '{client.Name}'?",
+                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (result != DialogResult.Yes)
+                return;
+
+            await RunWithLoader(async () =>
+            {
+                try
+                {
+                    UpdateStatusLabel($"Deleting client '{client.Name}'...");
+
+                    var success = await _apiHelper.DeleteClientAsync(client.Id);
+
+                    if (!success)
+                    {
+                        MessageBox.Show("Failed to delete client.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        UpdateStatusLabel("Error deleting client.");
+                        return;
+                    }
+
+                    // Remove from local client lists
+                    _clients.RemoveAll(c => c.Id == client.Id);
+                    _filteredClients.RemoveAll(c => c.Id == client.Id);
+
+                    // Remove the node from the tree view
+                    clientsViewBox.Nodes.Remove(selectedNode);
+
+                    MessageBox.Show("Client deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UpdateStatusLabel($"Client '{client.Name}' deleted successfully.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to delete client: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UpdateStatusLabel("Error deleting client.");
+                }
+            });
+        }
         private void CenterLoaderControls()
         {
             if (loaderOverlay == null || loaderPictureBox == null || loaderLabel == null) return;
@@ -2398,21 +2455,47 @@ namespace QACORDMS.Client
         // Version comparison logic
         private bool IsVersionHigher(string serverVersion, string currentVersion)
         {
-            if (string.IsNullOrEmpty(serverVersion) || string.IsNullOrEmpty(currentVersion))
-                return false;
+            // Split the version strings into components
+            var serverComponents = serverVersion.Split('.');
+            var currentComponents = currentVersion.Split('.');
 
-            var serverParts = serverVersion.Split('.').Select(int.Parse).ToArray();
-            var currentParts = currentVersion.Split('.').Select(int.Parse).ToArray();
-
-            for (int i = 0; i < Math.Min(serverParts.Length, currentParts.Length); i++)
+            // Compare each component
+            for (int i = 0; i < Math.Max(serverComponents.Length, currentComponents.Length); i++)
             {
-                if (serverParts[i] > currentParts[i])
-                    return true;
-                if (serverParts[i] < currentParts[i])
-                    return false;
+                // If one version has more components, it's considered higher
+                if (i >= serverComponents.Length) return false;
+                if (i >= currentComponents.Length) return true;
+
+                // Convert components to integers
+                if (!int.TryParse(serverComponents[i], out int serverNum) || !int.TryParse(currentComponents[i], out int currentNum))
+                {
+                    // If conversion fails, treat as non-numeric (e.g., "alpha" or "beta")
+                    return string.Compare(serverComponents[i], currentComponents[i], StringComparison.Ordinal) > 0;
+                }
+
+                // Compare numeric components
+                if (serverNum > currentNum) return true;
+                if (serverNum < currentNum) return false;
             }
 
-            return serverParts.Length > currentParts.Length;
+            // If all components are equal, versions are the same
+            return false;
+        
+            //if (string.IsNullOrEmpty(serverVersion) || string.IsNullOrEmpty(currentVersion))
+            //    return false;
+
+            //var serverParts = serverVersion.Split('.').Select(int.Parse).ToArray();
+            //var currentParts = currentVersion.Split('.').Select(int.Parse).ToArray();
+
+            //for (int i = 0; i < Math.Min(serverParts.Length, currentParts.Length); i++)
+            //{
+            //    if (serverParts[i] > currentParts[i])
+            //        return true;
+            //    if (serverParts[i] < currentParts[i])
+            //        return false;
+            //}
+
+            //return serverParts.Length > currentParts.Length;
         }
         private class AppSettings
         {
@@ -2436,21 +2519,65 @@ namespace QACORDMS.Client
         }
 
 
+        // Alternative approach - uninstall first, then install
         private async void UpdateMenuItem_Click(object sender, EventArgs e)
         {
             await RunWithLoader(async () =>
             {
                 try
                 {
+                    UpdateStatusLabel($"Preparing for update to version {latestVersion}...");
+                    
+                    // Get the product code of the currently installed version
+                    string productCode = GetInstalledProductCode();
+                    
+                    // First uninstall the current version
+                    UpdateStatusLabel("Removing current version...");
+                    var uninstallProcess = new ProcessStartInfo
+                    {
+                        FileName = "msiexec.exe",
+                        Arguments = $"/x {productCode} /qb", // /qb for basic UI
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    };
+                    
+                    Process uninstallProc = Process.Start(uninstallProcess);
+                    uninstallProc.WaitForExit();
+                    
+                    // Now proceed with downloading and installing the new version
                     UpdateStatusLabel($"Downloading update {latestVersion}...");
-                    string installerPath = Path.Combine(tempFolderPath, $"DMS_Update_{latestVersion}.exe");
+                    
+                    // Create a dedicated update directory
+                    string updateDir = Path.Combine(Path.GetTempPath(), $"QACORDMS_Update_{latestVersion}");
+                    if (!Directory.Exists(updateDir))
+                    {
+                        Directory.CreateDirectory(updateDir);
+                    }
+                    
+                    string installerPath = Path.Combine(updateDir, "Bakertilly.msi");
+                    
+                    // Delete existing file if it exists
+                    if (File.Exists(installerPath))
+                    {
+                        try
+                        {
+                            File.Delete(installerPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogToFile($"Failed to delete existing installer: {ex.Message}");
+                        }
+                    }
 
+                    // Download the MSI installer
                     using (var client = new HttpClient())
                     {
-                        // Set custom timeout (e.g., 5 minutes for 152 MB file)
                         client.Timeout = TimeSpan.FromMinutes(5);
-
-                        var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                        
+                        // Use the direct MSI URL
+                        string msiDownloadUrl = "https://test.ibt-learning.com/updates/Bakertilly.msi";
+                        
+                        var response = await client.GetAsync(msiDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
                         if (!response.IsSuccessStatusCode)
                         {
                             UpdateStatusLabel($"Download failed: HTTP {response.StatusCode}");
@@ -2460,41 +2587,38 @@ namespace QACORDMS.Client
 
                         var contentLength = response.Content.Headers.ContentLength ?? -1;
                         using (var stream = await response.Content.ReadAsStreamAsync())
-                        using (var fileStream = new FileStream(installerPath, FileMode.Create, FileAccess.Write))
+                        using (var fileStream = new FileStream(installerPath, FileMode.Create, FileAccess.Write, FileShare.None))
                         {
                             var progress = new Progress<double>(percent =>
                                 UpdateStatusLabel($"Downloading update {latestVersion}... ({percent:F1}%)"));
                             await CopyStreamWithProgress(stream, fileStream, contentLength, progress);
                         }
                     }
-                    //using (var client = new HttpClient())
-                    //{
-                    //    var response = await client.GetAsync(downloadUrl);
-                    //    if (!response.IsSuccessStatusCode)
-                    //    {
-                    //        UpdateStatusLabel($"Download failed: HTTP {response.StatusCode}");
-                    //        MessageBox.Show("Failed to download the update.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    //        return;
-                    //    }
 
-                    //    using (var stream = await response.Content.ReadAsStreamAsync())
-                    //    using (var fileStream = new FileStream(installerPath, FileMode.Create, FileAccess.Write))
-                    //    {
-                    //        await stream.CopyToAsync(fileStream);
-                    //    }
-                    //}
+                    // Verify the downloaded file exists
+                    if (!File.Exists(installerPath))
+                    {
+                        throw new FileNotFoundException("Downloaded installer file not found", installerPath);
+                    }
 
                     UpdateStatusLabel($"Installing update {latestVersion}...");
+                    
+                    // Launch the MSI installer
                     var processInfo = new ProcessStartInfo
                     {
-                        FileName = installerPath,
-                        Arguments = "/SILENT /NOCANCEL /NORESTART",
-                        UseShellExecute = true
+                        FileName = "msiexec.exe",
+                        Arguments = $"/i \"{installerPath}\" /qb", // /qb for basic UI
+                        UseShellExecute = true,
+                        Verb = "runas" // Request admin privileges
                     };
 
                     Process.Start(processInfo);
-                    UpdateStatusLabel("Update started. Application will restart after installation.");
-
+                    
+                    // Give the installer a moment to start
+                    await Task.Delay(2000);
+                    UpdateStatusLabel("Update started. Application will close now.");
+                    
+                    // Exit the application
                     Application.Exit();
                 }
                 catch (Exception ex)
@@ -2504,7 +2628,6 @@ namespace QACORDMS.Client
                 }
             });
         }
-
         // Helper method to copy stream with progress
         private async Task CopyStreamWithProgress(Stream source, Stream destination, long contentLength, IProgress<double> progress)
         {
@@ -2522,6 +2645,58 @@ namespace QACORDMS.Client
                     double percent = (double)totalBytesRead / contentLength * 100;
                     progress?.Report(percent);
                 }
+            }
+        }
+        // Add this helper method to your class
+        private string GetInstalledProductCode()
+        {
+            try
+            {
+                // Search for installed products with your app name
+                string appName = "Bakertilly"; // Must match the ProductName in your MSI
+                
+                using (var searcher = new System.Management.ManagementObjectSearcher(
+                    "SELECT * FROM Win32_Product WHERE Name = '" + appName + "'"))
+                {
+                    foreach (var product in searcher.Get())
+                    {
+                        return product["IdentifyingNumber"].ToString();
+                    }
+                }
+                
+                return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"Error getting product code: {ex.Message}");
+                return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
+            }
+        }
+
+        // Helper method to get product code from upgrade code
+        private string GetProductCodeFromUpgradeCode(string upgradeCode)
+        {
+            try
+            {
+                // Remove braces if present
+                upgradeCode = upgradeCode.Trim('{', '}');
+                
+                // Query the Windows Installer for products with this upgrade code
+                using (var searcher = new System.Management.ManagementObjectSearcher(
+                    "SELECT * FROM Win32_Product WHERE UpgradeCode = '" + upgradeCode + "'"))
+                {
+                    foreach (var product in searcher.Get())
+                    {
+                        return product["IdentifyingNumber"].ToString();
+                    }
+                }
+                
+                return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"Error getting product code from upgrade code: {ex.Message}");
+                return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
             }
         }
     }
@@ -2584,22 +2759,22 @@ public class ListViewItemComparer : IComparer
                 double sizeY = ParseSize(itemY.SubItems[column].Text);
                 returnVal = sizeX.CompareTo(sizeY);
                 break;
-            //case 3: // Date Created column
-            //    DateTime dateCreatedX = DateTime.TryParse(itemX.SubItems[column].Text, out var d1) ? d1 : DateTime.MinValue;
-            //    DateTime dateCreatedY = DateTime.TryParse(itemY.SubItems[column].Text, out var d2) ? d2 : DateTime.MinValue;
-            //    returnVal = DateTime.Compare(dateCreatedX, dateCreatedY);
-            //    break;
-            //case 4: // Created By column
-            //    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
-            //    break;
-            //case 5: // Date Modified column
-            //    DateTime dateModifiedX = DateTime.TryParse(itemX.SubItems[column].Text, out var d3) ? d3 : DateTime.MinValue;
-            //    DateTime dateModifiedY = DateTime.TryParse(itemY.SubItems[column].Text, out var d4) ? d4 : DateTime.MinValue;
-            //    returnVal = DateTime.Compare(dateModifiedX, dateModifiedY);
-            //    break;
-            //case 6: // Last Modified By column
-            //    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
-            //    break;
+                //case 3: // Date Created column
+                //    DateTime dateCreatedX = DateTime.TryParse(itemX.SubItems[column].Text, out var d1) ? d1 : DateTime.MinValue;
+                //    DateTime dateCreatedY = DateTime.TryParse(itemY.SubItems[column].Text, out var d2) ? d2 : DateTime.MinValue;
+                //    returnVal = DateTime.Compare(dateCreatedX, dateCreatedY);
+                //    break;
+                //case 4: // Created By column
+                //    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+                //    break;
+                //case 5: // Date Modified column
+                //    DateTime dateModifiedX = DateTime.TryParse(itemX.SubItems[column].Text, out var d3) ? d3 : DateTime.MinValue;
+                //    DateTime dateModifiedY = DateTime.TryParse(itemY.SubItems[column].Text, out var d4) ? d4 : DateTime.MinValue;
+                //    returnVal = DateTime.Compare(dateModifiedX, dateModifiedY);
+                //    break;
+                //case 6: // Last Modified By column
+                //    returnVal = String.Compare(itemX.SubItems[column].Text, itemY.SubItems[column].Text);
+                //    break;
         }
 
         if (order == SortOrder.Descending)
@@ -2609,7 +2784,7 @@ public class ListViewItemComparer : IComparer
     }
 
     private double ParseSize(string sizeText)
-    {  
+    {
         if (string.IsNullOrEmpty(sizeText) || sizeText == "0 B")
             return 0;
 

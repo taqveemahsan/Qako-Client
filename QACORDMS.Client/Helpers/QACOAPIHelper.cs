@@ -602,7 +602,8 @@ namespace QACORDMS.Client.Helpers
             AddAuthorizationHeader();
             try
             {
-                var response = await _httpClient.DeleteAsync($"client/{id}");
+                var response = await _httpClient.PostAsync($"Client/delete/{id}", null);
+
                 response.EnsureSuccessStatusCode();
                 return true;
             }
