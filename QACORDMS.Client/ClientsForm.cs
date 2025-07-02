@@ -47,7 +47,7 @@ namespace QACORDMS.Client
 
             foreach (var client in response.Clients)
             {
-                var index = clientsGridView.Rows.Add(client.Name, client.Email, client.Phone, client.FolderSize);
+                var index = clientsGridView.Rows.Add(client.Name, client.Email, client.Phone);
                 //clientsGridView.Rows[index].Cells["AddProjectButton"].Value = "Add Project";
                 clientsGridView.Rows[index].Cells["Delete"].Value = "Delete";
                 clientsGridView.Rows[index].Tag = client.Id;
@@ -68,9 +68,9 @@ namespace QACORDMS.Client
         {
             if (e.RowIndex < 0) return;
 
-            if (clientsGridView.Columns["Delete"] == null || clientsGridView.Columns["AddProjectButton"] == null)
+            if (clientsGridView.Columns["Delete"] == null)
             {
-                MessageBox.Show("Error: Delete or AddProjectButton column not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error: Delete column not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -92,11 +92,11 @@ namespace QACORDMS.Client
                     }
                 }
             }
-            else if (e.ColumnIndex == clientsGridView.Columns["AddProjectButton"].Index)
-            {
-                var clientId = (Guid)clientsGridView.Rows[e.RowIndex].Tag;
-                OpenAddProjectForm(clientId);
-            }
+            //else if (e.ColumnIndex == clientsGridView.Columns["AddProjectButton"].Index)
+            //{
+            //    var clientId = (Guid)clientsGridView.Rows[e.RowIndex].Tag;
+            //    OpenAddProjectForm(clientId);
+            //}
         }
 
         private async void searchButton_Click(object sender, EventArgs e)
@@ -140,11 +140,11 @@ namespace QACORDMS.Client
             int nameWidth = Math.Max((int)(totalWidth * nameProportion), dataGridViewTextBoxColumn1.MinimumWidth);
             int emailWidth = Math.Max((int)(totalWidth * emailProportion), dataGridViewTextBoxColumn2.MinimumWidth);
             int phoneWidth = Math.Max((int)(totalWidth * phoneProportion), dataGridViewTextBoxColumn3.MinimumWidth);
-            int folderSizeWidth = Math.Max((int)(totalWidth * folderSizeProportion), dataGridViewTextBoxColumn4.MinimumWidth);
+            //int folderSizeWidth = Math.Max((int)(totalWidth * folderSizeProportion), dataGridViewTextBoxColumn4.MinimumWidth);
             int deleteWidth = Math.Max((int)(totalWidth * deleteProportion), deleteButtonColumn.MinimumWidth);
 
             // Calculate total calculated width
-            int totalCalculatedWidth = nameWidth + emailWidth + phoneWidth + folderSizeWidth + deleteWidth;
+            int totalCalculatedWidth = nameWidth + emailWidth + phoneWidth + deleteWidth;
 
             // Adjust widths to exactly fit the totalWidth (to avoid scrollbars)
             if (totalCalculatedWidth != totalWidth)
@@ -154,15 +154,15 @@ namespace QACORDMS.Client
                 nameWidth = (int)(nameWidth * scaleFactor);
                 emailWidth = (int)(emailWidth * scaleFactor);
                 phoneWidth = (int)(phoneWidth * scaleFactor);
-                folderSizeWidth = (int)(folderSizeWidth * scaleFactor);
-                deleteWidth = totalWidth - (nameWidth + emailWidth + phoneWidth + folderSizeWidth); // Assign remaining width to Delete
+                //folderSizeWidth = (int)(folderSizeWidth * scaleFactor);
+                deleteWidth = totalWidth - (nameWidth + emailWidth + phoneWidth); // Assign remaining width to Delete
             }
 
             // Set the column widths
             dataGridViewTextBoxColumn1.Width = nameWidth;
             dataGridViewTextBoxColumn2.Width = emailWidth;
             dataGridViewTextBoxColumn3.Width = phoneWidth;
-            dataGridViewTextBoxColumn4.Width = folderSizeWidth;
+            //dataGridViewTextBoxColumn4.Width = folderSizeWidth;
             deleteButtonColumn.Width = deleteWidth;
 
             // Disable horizontal scrollbar

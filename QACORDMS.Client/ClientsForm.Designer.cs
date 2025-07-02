@@ -28,7 +28,7 @@
             dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
+            //dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)clientsGridView).BeginInit();
             SuspendLayout();
             // 
@@ -48,7 +48,7 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             clientsGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             clientsGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            clientsGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, deleteButtonColumn });
+            clientsGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, deleteButtonColumn });
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = SystemColors.Window;
             dataGridViewCellStyle3.Font = new Font("Segoe UI", 10F);
@@ -180,10 +180,10 @@
                                                                                            // ClientsForm
                                                                                            // 
 
-            dataGridViewTextBoxColumn4.HeaderText = "Folder Size";
-            dataGridViewTextBoxColumn4.MinimumWidth = 80; // Minimum width
-            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
-            dataGridViewTextBoxColumn4.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
+            //dataGridViewTextBoxColumn4.HeaderText = "Folder Size";
+            //dataGridViewTextBoxColumn4.MinimumWidth = 80; // Minimum width
+            //dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
+            //dataGridViewTextBoxColumn4.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; // We'll set the width manually
                                                                                            // 
                                                                                            // ClientsForm
                                                                                            // 
@@ -211,7 +211,7 @@
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
+        //private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
         private DataGridViewButtonColumn deleteButtonColumn;
     }
 }

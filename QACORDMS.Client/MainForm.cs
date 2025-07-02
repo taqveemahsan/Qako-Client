@@ -268,7 +268,7 @@ namespace QACORDMS.Client
                 SendMessage(header, HDM_GETITEM, (IntPtr)columnIndex, ref hdItem);
 
                 // Preserve the existing format (e.g., alignment) and only modify the sort arrow
-                hdItem.mask = HDI_FORMAT; // We�re updating the format
+                hdItem.mask = HDI_FORMAT; // We're updating the format
                 hdItem.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN); // Clear existing sort arrows
                 hdItem.fmt |= sortOrder switch
                 {
@@ -340,15 +340,15 @@ namespace QACORDMS.Client
             // Return default value if input is null or empty
             if (string.IsNullOrWhiteSpace(enumName))
             {
-                return "Public Company";
+                return "Public Ltd Companies";
             }
 
             // Custom mappings for specific enum values that don't split nicely
             var customMappings = new Dictionary<string, string>
             {
-                { "PrivateLable", "Private Label" },
-                { "PrivateLabel", "Private Label" },
-                { "PublicComp", "Public Company" },
+                { "PrivateLable", "Private Ltd Companies" },
+                { "PrivateLabel", "Private Ltd Companies" },
+                { "PublicComp", "Public Ltd Companies" },
                 { "ForeignCompanies", "Foreign Companies" },
                 { "PartnershipFirms", "Partnership Firms" },
                 { "NonProfitOrganizations", "Non-Profit Organizations" },
@@ -425,8 +425,8 @@ namespace QACORDMS.Client
 
                     foreach (var client in group.OrderBy(c => c.Name))
                     {
-                        string folderSize = string.IsNullOrEmpty(client.FolderSize) ? "0KB" : client.FolderSize;
-                        string nodeText = $"{client.Name} ({folderSize})";
+                        //string folderSize = string.IsNullOrEmpty(client.FolderSize) ? "0KB" : client.FolderSize;
+                        string nodeText = $"{client.Name}";
                         var clientNode = new TreeNode(nodeText)
                         {
                             Tag = client
@@ -453,7 +453,7 @@ namespace QACORDMS.Client
             if (e.Node.Level == 1 && e.Node.Tag is Helpers.Client client) // Only client nodes
             {
                 string name = client.Name;
-                string folderSize = string.IsNullOrEmpty(client.FolderSize) ? "0KB" : client.FolderSize;
+                //string folderSize = string.IsNullOrEmpty(client.FolderSize) ? "0KB" : client.FolderSize;
 
                 Font nameFont = new Font(e.Node.TreeView.Font.FontFamily, 10, FontStyle.Regular);
                 Font sizeFont = new Font(e.Node.TreeView.Font.FontFamily, 7, FontStyle.Regular);
@@ -475,7 +475,7 @@ namespace QACORDMS.Client
 
                 // Draw texts
                 e.Graphics.DrawString(name, nameFont, Brushes.Black, namePoint);
-                e.Graphics.DrawString($" ({folderSize})", sizeFont, Brushes.Gray, sizePoint);
+                //e.Graphics.DrawString($" ({folderSize})", sizeFont, Brushes.Gray, sizePoint);
             }
             else
             {
@@ -2463,8 +2463,8 @@ namespace QACORDMS.Client
             for (int i = 0; i < Math.Max(serverComponents.Length, currentComponents.Length); i++)
             {
                 // If one version has more components, it's considered higher
-                        Arguments = "/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART",
-                        Verb = "runas"
+                        //Arguments = "/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART",
+                        //Verb = "runas"
                 if (i >= currentComponents.Length) return true;
 
                 // Convert components to integers

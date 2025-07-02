@@ -9,16 +9,16 @@ namespace QACORDMS.Client.Helpers
 {
     public enum CompanyType
     {
-        PrivateLable = 1,
-        PublicComp = 2,
-        ForeignCompanies = 3,
-        PartnershipFirms = 4,
-        NonProfitOrganizations = 5,
-        NBFC = 6,
-        PICS = 7,
-        ProvidentGratuityFunds = 8,
-        IndividualsSoleProprietors = 9,
-        Others = 10
+        PrivateLable = 0,
+        PublicComp = 1,
+        ForeignCompanies = 2,
+        PartnershipFirms = 3,
+        NonProfitOrganizations = 4,
+        NBFC = 5,
+        PICS = 6,
+        ProvidentGratuityFunds = 7,
+        IndividualsSoleProprietors = 8,
+        Others = 9
     }
 
     public enum ProjectType
