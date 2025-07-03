@@ -14,6 +14,9 @@
         private System.Windows.Forms.Label phoneLabel;
         private System.Windows.Forms.Label addressLabel;
         private System.Windows.Forms.Label companyTypeLabel;
+        private Panel loaderOverlay;
+        private PictureBox loaderPictureBox;
+        private Label loaderLabel;
 
         private void InitializeComponent()
         {
@@ -29,6 +32,9 @@
             phoneLabel = new Label();
             addressLabel = new Label();
             companyTypeLabel = new Label();
+            loaderOverlay = new Panel();
+            loaderPictureBox = new PictureBox();
+            loaderLabel = new Label();
             SuspendLayout();
             // 
             // nameTextBox
@@ -164,6 +170,29 @@
             companyTypeLabel.TabIndex = 5;
             companyTypeLabel.Text = "Company Type";
             // 
+            // loaderOverlay
+            // 
+            loaderOverlay.BackColor = Color.FromArgb(120, 255, 255, 255); // semi-transparent white
+            loaderOverlay.Dock = DockStyle.Fill;
+            loaderOverlay.Visible = false;
+            loaderOverlay.BringToFront();
+            loaderOverlay.Controls.Add(loaderPictureBox);
+            loaderOverlay.Controls.Add(loaderLabel);
+            // loaderPictureBox
+            loaderPictureBox.Size = new Size(64, 64);
+            loaderPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+            loaderPictureBox.Image = Image.FromFile("Images/spinner.gif");
+            // loaderLabel
+            loaderLabel.Text = "Creating client...";
+            loaderLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            loaderLabel.ForeColor = Color.FromArgb(33, 150, 243);
+            loaderLabel.AutoSize = true;
+            // Add loaderOverlay last so it sits on top
+            Controls.Add(loaderOverlay);
+            // Center loader on form
+            this.Load += (s, e) => CenterLoader();
+            this.Resize += (s, e) => CenterLoader();
+            // 
             // AddClientForm
             // 
             BackColor = Color.FromArgb(245, 245, 245);
@@ -190,7 +219,14 @@
             ResumeLayout(false);
             PerformLayout();
         }
-
+        private void CenterLoader()
+        {
+            if (loaderPictureBox != null && loaderLabel != null && loaderOverlay.Visible)
+            {
+                loaderPictureBox.Location = new Point((this.ClientSize.Width - loaderPictureBox.Width) / 2, (this.ClientSize.Height - loaderPictureBox.Height) / 2 - 30);
+                loaderLabel.Location = new Point((this.ClientSize.Width - loaderLabel.Width) / 2, (this.ClientSize.Height) / 2 + 40);
+            }
+        }
     }
 }
 

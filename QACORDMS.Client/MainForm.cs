@@ -181,9 +181,9 @@ namespace QACORDMS.Client
 
         private void CustomizeUIForRole()
         {
-            addUserMenuItem = new ToolStripMenuItem("Add User");
+            // Remove duplicate creation and addition of addUserMenuItem
+            //addUserMenuItem = new ToolStripMenuItem("Add User");
             addUserMenuItem.Click += AddUserMenuItem_Click;
-            menuStrip.Items.Add(addUserMenuItem);
 
             if (_userRole == "Partner")
             {
@@ -2295,10 +2295,15 @@ namespace QACORDMS.Client
         }
         private async void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Back) //Backspace for safety
+            // Only handle Backspace for back navigation if focus is NOT in a text input
+            if (e.KeyCode == Keys.Back)
             {
-                e.Handled = true;
-                BackMenuItem_Click(sender, new EventArgs());
+                if (!(searchTextBox.Focused || (ActiveControl is TextBoxBase && ActiveControl != null)))
+                {
+                    e.Handled = true;
+                    BackMenuItem_Click(sender, new EventArgs());
+                }
+                // Otherwise, let the text box handle the Backspace normally
             }
         }
 

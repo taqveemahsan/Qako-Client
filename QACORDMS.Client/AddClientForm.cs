@@ -33,6 +33,13 @@ namespace QACORDMS.Client
                 return;
             }
 
+            // Show loader and disable controls
+            loaderOverlay.Visible = true;
+            CenterLoader();
+            foreach (Control ctl in Controls) if (ctl != loaderOverlay) ctl.Enabled = false;
+            loaderOverlay.BringToFront();
+            loaderOverlay.Update();
+
             var newClient = new Helpers.Client
             {
                 Name = nameTextBox.Text,
@@ -45,6 +52,10 @@ namespace QACORDMS.Client
             try
             {
                 var response = await _apiHelper.CreateClientAsync(newClient);
+
+                // Hide loader and re-enable controls
+                loaderOverlay.Visible = false;
+                foreach (Control ctl in Controls) ctl.Enabled = true;
 
                 if (response.IsSuccessStatusCode)
                 {
