@@ -59,11 +59,14 @@ namespace QACORDMS.Client
                     return;
                 }
 
+                string rawUsername = txtUsername.Text;
+                string cleanUsername = Regex.Replace(rawUsername, @"[^a-zA-Z0-9_]", "");
+
                 var user = new Helpers.User
                 {
                     FirstName = "",
                     LastName = "",
-                    Username = txtUsername.Text,
+                    Username = cleanUsername,
                     Email = txtEmail.Text,
                     Password = txtPassword.Text,
                     RoleNames = selectedRoles

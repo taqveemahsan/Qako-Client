@@ -158,7 +158,7 @@ namespace QACORDMS.Client
             var selectedItem = listView1.SelectedItems[0];
             string fileName = selectedItem.Text;
             string clientName = _selectedClient?.Name ?? "[Client]";
-            string projectTypeName = _selectedProject != null ? _selectedProject.ProjectType.ToString() : "[Project Type]";
+            string projectTypeName = _selectedProject?.ProjectName ?? "[Project Type]";
             string path = $"BT-DMS/{clientName}/{projectTypeName}/{fileName}";
             try
             {
