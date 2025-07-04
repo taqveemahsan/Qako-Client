@@ -10,6 +10,16 @@
             settingsMenuItem = new ToolStripMenuItem();
             addUserMenuItem = new ToolStripMenuItem();
             updateMenuItem = new ToolStripMenuItem(); // New Update menu item
+            createNewMenuItem = new ToolStripMenuItem();
+            newFolderMenuItem = new ToolStripMenuItem();
+            newTextDocumentMenuItem = new ToolStripMenuItem();
+            newWordMenuItem = new ToolStripMenuItem();
+            newExcelMenuItem = new ToolStripMenuItem();
+            newPowerPointMenuItem = new ToolStripMenuItem();
+            newBitmapMenuItem = new ToolStripMenuItem();
+            newRarMenuItem = new ToolStripMenuItem();
+            newZipMenuItem = new ToolStripMenuItem();
+            copyPathMenuItem = new ToolStripMenuItem();
             clientsViewBox = new TreeView();
             projectComboBox = new ComboBox();
             listView1 = new ListView();
@@ -39,10 +49,10 @@
 
             // menuStrip
             menuStrip.BackColor = Color.FromArgb(0, 102, 204);
-            menuStrip.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            menuStrip.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
             menuStrip.ForeColor = Color.White;
             menuStrip.ImageScalingSize = new Size(24, 24);
-            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, addUserMenuItem, settingsMenuItem, updateMenuItem });
+            menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, addUserMenuItem, settingsMenuItem, createNewMenuItem, copyPathMenuItem, updateMenuItem });
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Padding = new Padding(10, 2, 10, 2);
@@ -75,6 +85,66 @@
             updateMenuItem.Text = "Update";
             updateMenuItem.Enabled = false; // Initially disabled
             updateMenuItem.Click += UpdateMenuItem_Click;
+
+            // createNewMenuItem
+            createNewMenuItem.Name = "createNewMenuItem";
+            createNewMenuItem.Size = new Size(120, 29);
+            createNewMenuItem.Text = "Create New";
+            createNewMenuItem.DropDownItems.AddRange(new ToolStripItem[] {
+                newFolderMenuItem,
+                newTextDocumentMenuItem,
+                newWordMenuItem,
+                newExcelMenuItem,
+                newPowerPointMenuItem,
+                newBitmapMenuItem,
+                newRarMenuItem,
+                newZipMenuItem
+            });
+
+            // copyPathMenuItem
+            copyPathMenuItem.Name = "copyPathMenuItem";
+            copyPathMenuItem.Size = new Size(100, 29);
+            copyPathMenuItem.Text = "Copy Path";
+
+            // newFolderMenuItem
+            newFolderMenuItem.Name = "newFolderMenuItem";
+            newFolderMenuItem.Size = new Size(250, 30);
+            newFolderMenuItem.Text = "Folder";
+
+            // newTextDocumentMenuItem
+            newTextDocumentMenuItem.Name = "newTextDocumentMenuItem";
+            newTextDocumentMenuItem.Size = new Size(250, 30);
+            newTextDocumentMenuItem.Text = "Text Document";
+
+            // newWordMenuItem
+            newWordMenuItem.Name = "newWordMenuItem";
+            newWordMenuItem.Size = new Size(250, 30);
+            newWordMenuItem.Text = "Microsoft Word Document";
+
+            // newExcelMenuItem
+            newExcelMenuItem.Name = "newExcelMenuItem";
+            newExcelMenuItem.Size = new Size(250, 30);
+            newExcelMenuItem.Text = "Microsoft Excel Worksheet";
+
+            // newPowerPointMenuItem
+            newPowerPointMenuItem.Name = "newPowerPointMenuItem";
+            newPowerPointMenuItem.Size = new Size(250, 30);
+            newPowerPointMenuItem.Text = "Microsoft PowerPoint Presentation";
+
+            // newBitmapMenuItem
+            newBitmapMenuItem.Name = "newBitmapMenuItem";
+            newBitmapMenuItem.Size = new Size(250, 30);
+            newBitmapMenuItem.Text = "Bitmap Image";
+
+            // newRarMenuItem
+            newRarMenuItem.Name = "newRarMenuItem";
+            newRarMenuItem.Size = new Size(250, 30);
+            newRarMenuItem.Text = "WinRAR Archive";
+
+            // newZipMenuItem
+            newZipMenuItem.Name = "newZipMenuItem";
+            newZipMenuItem.Size = new Size(250, 30);
+            newZipMenuItem.Text = "WinRAR ZIP Archive";
 
             // clientsViewBox
             clientsViewBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
@@ -374,5 +444,15 @@
         private Label loaderLabel;
         private Panel loaderOverlay;
         private ToolStripMenuItem updateMenuItem; // New field for updateMenuItem
+        private ToolStripMenuItem createNewMenuItem;
+        private ToolStripMenuItem newFolderMenuItem;
+        private ToolStripMenuItem newTextDocumentMenuItem;
+        private ToolStripMenuItem newWordMenuItem;
+        private ToolStripMenuItem newExcelMenuItem;
+        private ToolStripMenuItem newPowerPointMenuItem;
+        private ToolStripMenuItem newBitmapMenuItem;
+        private ToolStripMenuItem newRarMenuItem;
+        private ToolStripMenuItem newZipMenuItem;
+        private ToolStripMenuItem copyPathMenuItem;
     }
 }

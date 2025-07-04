@@ -133,6 +133,42 @@ namespace QACORDMS.Client
 
             // Check for updates on form load
             CheckForUpdatesAsync();
+
+            // Wire up Create New menu items
+            newFolderMenuItem.Click += async (s, e) => await CreateFolder_Click(s, e);
+            newTextDocumentMenuItem.Click += async (s, e) => await CreateNewFile("txt", "Text Document");
+            newWordMenuItem.Click += async (s, e) => await CreateNewFile("docx", "Microsoft Word Document");
+            newExcelMenuItem.Click += async (s, e) => await CreateNewFile("xlsx", "Microsoft Excel Worksheet");
+            newPowerPointMenuItem.Click += async (s, e) => await CreateNewFile("pptx", "Microsoft PowerPoint Presentation");
+            newBitmapMenuItem.Click += async (s, e) => await CreateNewFile("bmp", "Bitmap Image");
+            newRarMenuItem.Click += async (s, e) => await CreateNewFile("rar", "WinRAR Archive");
+            newZipMenuItem.Click += async (s, e) => await CreateNewFile("zip", "WinRAR ZIP Archive");
+
+            // Wire up Copy Path menu item
+            copyPathMenuItem.Click += (s, e) => CopySelectedFilePathToClipboard();
+        }
+
+        private void CopySelectedFilePathToClipboard()
+        {
+            if (listView1.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Please select a file to copy its path.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            var selectedItem = listView1.SelectedItems[0];
+            string fileName = selectedItem.Text;
+            string clientName = _selectedClient?.Name ?? "[Client]";
+            string projectTypeName = _selectedProject != null ? _selectedProject.ProjectType.ToString() : "[Project Type]";
+            string path = $"BT-DMS/{clientName}/{projectTypeName}/{fileName}";
+            try
+            {
+                Clipboard.SetText(path);
+                MessageBox.Show($"Path copied to clipboard:\n{path}", "Copied", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy path: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
