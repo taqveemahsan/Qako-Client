@@ -578,12 +578,34 @@ namespace QACORDMS.Client
                         UpdateStatusLabel($"Loading projects for {_selectedClient.Name}...");
                         _projects = await _apiHelper.GetClientProjectsAsync(_selectedClient.Id);
 
+                        // Filter projects based on user role using a mapping
+                        IEnumerable<Helpers.ClientProject> filteredProjects;
+                        var roleToProjectType = new Dictionary<string, Helpers.ProjectType>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            { "taxmanager", Helpers.ProjectType.Tax },
+                            { "auditmanager", Helpers.ProjectType.Audit },
+                            { "corporatemanager", Helpers.ProjectType.Corporate },
+                            { "advisorymanager", Helpers.ProjectType.Advisory },
+                            { "erpmanager", Helpers.ProjectType.ERP },
+                            { "bookkeepingmanager", Helpers.ProjectType.Bookkeeping },
+                            { "othermanager", Helpers.ProjectType.Other }
+                        };
+                        string normalizedRole = _userRole?.Replace(" ", "").ToLowerInvariant() ?? "";
+                        if (roleToProjectType.TryGetValue(normalizedRole, out var projectType))
+                        {
+                            filteredProjects = _projects.Where(p => p.ProjectName == projectType.ToString());
+                        }
+                        else
+                        {
+                            filteredProjects = _projects;
+                        }
+
                         if (projectComboBox.InvokeRequired)
                         {
                             projectComboBox.Invoke(new Action(() =>
                             {
                                 projectComboBox.Items.Clear();
-                                projectComboBox.Items.AddRange(_projects.Select(p => p.ProjectName).ToArray());
+                                projectComboBox.Items.AddRange(filteredProjects.Select(p => p.ProjectName).ToArray());
                                 if (projectComboBox.Items.Count > 0)
                                     projectComboBox.SelectedIndex = 0;
                             }));
@@ -591,7 +613,7 @@ namespace QACORDMS.Client
                         else
                         {
                             projectComboBox.Items.Clear();
-                            projectComboBox.Items.AddRange(_projects.Select(p => p.ProjectName).ToArray());
+                            projectComboBox.Items.AddRange(filteredProjects.Select(p => p.ProjectName).ToArray());
                             if (projectComboBox.Items.Count > 0)
                                 projectComboBox.SelectedIndex = 0;
                         }

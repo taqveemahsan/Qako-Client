@@ -27,11 +27,21 @@ namespace QACORDMS.Client
             }
             else
             {
-                using (var loginForm = new Login(apiHelper))
+                bool loggedIn = false;
+                while (!loggedIn)
                 {
-                    if (loginForm.ShowDialog() == DialogResult.OK)
+                    using (var loginForm = new Login(apiHelper))
                     {
-                        Application.Run(new MainForm(apiHelper, SessionHelper.CurrentUser.Role));
+                        if (loginForm.ShowDialog() == DialogResult.OK)
+                        {
+                            loggedIn = true;
+                            Application.Run(new MainForm(apiHelper, SessionHelper.CurrentUser.Role));
+                        }
+                        else
+                        {
+                            // User cancelled or closed the form, exit app
+                            break;
+                        }
                     }
                 }
             }

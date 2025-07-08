@@ -128,7 +128,7 @@ namespace QACORDMS.Client
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result == DialogResult.Yes)
                 {
-                    // await _apiHelper.DeleteUserAsync(userId); // Uncomment if delete API exists
+                    //await _apiHelper.DeleteUserAsync(userId); // Uncomment if delete API exists
                     await LoadUsersAsync();
                 }
             }

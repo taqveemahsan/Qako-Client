@@ -54,7 +54,13 @@ namespace QACORDMS.Client
                     }
 
                     this.DialogResult = DialogResult.OK;
-                    this.Close();
+                    //this.Close();
+
+                    // Show MainForm directly from Login form
+                    var mainForm = new MainForm(_apiHelper, user.Role);
+                    this.Hide(); // Hide login form
+                    mainForm.ShowDialog(); // Show main form as dialog
+                    this.Close(); // Close login form after main form closes
                 }
                 else
                 {
