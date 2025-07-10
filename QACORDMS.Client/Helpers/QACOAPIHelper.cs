@@ -451,12 +451,28 @@ namespace QACORDMS.Client.Helpers
             return true;
         }
 
-        public async Task<bool> DeleteUserAsync(Guid userId)
+        //public async Task<bool> DeleteUserAsync(Guid userId)
+        //{
+        //    AddAuthorizationHeader();
+        //    var response = await _httpClient.DeleteAsync($"Auth/delete/{userId}"); // Fixed extra slash
+        //    response.EnsureSuccessStatusCode();
+        //    return true;
+        //}
+
+        public async Task<bool> DeleteUserAsync(Guid id)
         {
             AddAuthorizationHeader();
-            var response = await _httpClient.DeleteAsync($"Client/delete/{userId}"); // Fixed extra slash
-            response.EnsureSuccessStatusCode();
-            return true;
+            try
+            {
+                var response = await _httpClient.PostAsync($"Auth/delete/{id}", null);
+
+                response.EnsureSuccessStatusCode();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to delete client: {ex.Message}");
+            }
         }
 
         public async Task<UserResponse> GetUsersAsync(string search = "", int pageNumber = 1, int pageSize = 10)
@@ -539,8 +555,28 @@ namespace QACORDMS.Client.Helpers
         public async Task<bool> DeleteProjectPermissionAsync(Guid permissionId)
         {
             AddAuthorizationHeader();
-            var response = await _httpClient.DeleteAsync($"Client/project/permission/delete/{permissionId}");
-            return response.IsSuccessStatusCode;
+            try
+            {
+                Console.WriteLine($"Attempting to delete permission with ID: {permissionId}");
+                // Try the exact route from the backend API
+                var response = await _httpClient.DeleteAsync($"project/permission/delete/{permissionId}");
+
+                Console.WriteLine($"Delete response status: {response.StatusCode}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Delete permission failed: {response.StatusCode} - {errorContent}");
+                    throw new Exception($"Failed to delete permission: {response.StatusCode} - {errorContent}");
+                }
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception in DeleteProjectPermissionAsync: {ex.Message}");
+                throw new Exception($"Error deleting permission: {ex.Message}");
+            }
         }
 
         public class UploadResponse
@@ -694,5 +730,30 @@ namespace QACORDMS.Client.Helpers
         //        throw new Exception($"Failed to rename file: {ex.Message}");
         //    }
         //}
+
+        public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("Auth/change-password", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Change password failed: {response.StatusCode} - {errorContent}");
+                    throw new Exception($"Failed to change password: {response.StatusCode} - {errorContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception in ChangePasswordAsync: {ex.Message}");
+                throw new Exception($"Error changing password: {ex.Message}");
+            }
+        }
     }
 }

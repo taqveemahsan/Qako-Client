@@ -20,6 +20,7 @@
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
         private DataGridViewButtonColumn deleteButtonColumn;
+        private DataGridViewButtonColumn changePasswordButtonColumn;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Button btnSearch;
         private System.Windows.Forms.Button btnPrevious;
@@ -36,6 +37,7 @@
             dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
             deleteButtonColumn = new DataGridViewButtonColumn();
+            changePasswordButtonColumn = new DataGridViewButtonColumn();
             addUserButton = new Button();
             txtSearch = new TextBox();
             btnSearch = new Button();
@@ -56,7 +58,7 @@
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             usersGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             usersGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            usersGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, deleteButtonColumn });
+            usersGridView.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, changePasswordButtonColumn, deleteButtonColumn });
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = SystemColors.Window;
             dataGridViewCellStyle3.Font = new Font("Segoe UI", 12F);
@@ -97,9 +99,17 @@
             dataGridViewTextBoxColumn4.Width = 200;
             dataGridViewTextBoxColumn4.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
+            // changePasswordButtonColumn
+            changePasswordButtonColumn.DefaultCellStyle = dataGridViewCellStyle2;
+            changePasswordButtonColumn.HeaderText = "Password";
+            changePasswordButtonColumn.MinimumWidth = 6;
+            changePasswordButtonColumn.Name = "ChangePassword";
+            changePasswordButtonColumn.Text = "Change Password";
+            changePasswordButtonColumn.UseColumnTextForButtonValue = true;
+            changePasswordButtonColumn.Width = 140;
+            changePasswordButtonColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+
             // deleteButtonColumn
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = Color.FromArgb(245, 245, 245);
             deleteButtonColumn.DefaultCellStyle = dataGridViewCellStyle2;
             deleteButtonColumn.HeaderText = "Action";
             deleteButtonColumn.MinimumWidth = 6;

@@ -19,7 +19,6 @@
         private System.Windows.Forms.DataGridViewCheckBoxColumn colCheckbox;
         private System.Windows.Forms.DataGridViewTextBoxColumn colUsername;
         private System.Windows.Forms.DataGridViewTextBoxColumn colEmail;
-        private System.Windows.Forms.DataGridViewButtonColumn colDelete;
         private System.Windows.Forms.DataGridViewButtonColumn colExpiry;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Label lblTitle;
@@ -35,7 +34,6 @@
             this.colCheckbox = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.colUsername = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colDelete = new System.Windows.Forms.DataGridViewButtonColumn();
             this.colExpiry = new System.Windows.Forms.DataGridViewButtonColumn();
             this.btnSave = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
@@ -90,8 +88,7 @@
                 this.colCheckbox,
                 this.colUsername,
                 this.colEmail,
-                this.colExpiry,
-                this.colDelete});
+                this.colExpiry});
             this.dgvUsers.Location = new System.Drawing.Point(40, 130);
             this.dgvUsers.Name = "dgvUsers";
             this.dgvUsers.RowHeadersVisible = false;
@@ -128,14 +125,6 @@
             this.colExpiry.UseColumnTextForButtonValue = true;
             this.colExpiry.Width = 120;
             this.colExpiry.DefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(245, 245, 245);
-
-            // colDelete
-            this.colDelete.HeaderText = "Action";
-            this.colDelete.Name = "colDelete";
-            this.colDelete.Text = "Delete";
-            this.colDelete.UseColumnTextForButtonValue = true;
-            this.colDelete.Width = 120;
-            this.colDelete.DefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(245, 245, 245);
 
             // btnPrevious
             this.btnPrevious.Location = new System.Drawing.Point(40, 500);
