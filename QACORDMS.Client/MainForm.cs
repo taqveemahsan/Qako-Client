@@ -1305,7 +1305,7 @@ namespace QACORDMS.Client
                 try
                 {
                     UpdateStatusLabel($"Deleting {selectedItem.Text}...");
-                    //await _apiHelper.DeleteFileAsync(driveItem.Id);
+                    await _apiHelper.DeleteFileAsync(driveItem.Id);
                     UpdateStatusLabel("File deleted successfully.");
                     await RefreshFileList();
                 }

@@ -755,5 +755,36 @@ namespace QACORDMS.Client.Helpers
                 throw new Exception($"Error changing password: {ex.Message}");
             }
         }
+
+        public async Task<bool> DeleteFileAsync(string fileId)
+        {
+            AddAuthorizationHeader();
+            try
+            {
+                Console.WriteLine($"Attempting to delete file with ID: {fileId}");
+
+                // Using POST method as shown in the API screenshot
+                var response = await _httpClient.PostAsync($"DocumentSync/delete-file/{fileId}", null);
+
+                Console.WriteLine($"Delete file response status: {response.StatusCode}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("File deleted successfully");
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Delete file failed: {response.StatusCode} - {errorContent}");
+                    throw new Exception($"Failed to delete file: {response.StatusCode} - {errorContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception in DeleteFileAsync: {ex.Message}");
+                throw new Exception($"Error deleting file: {ex.Message}");
+            }
+        }
     }
 }

@@ -160,7 +160,7 @@ namespace QACORDMS.Client
             var dialog = new Form
             {
                 Text = "Change Password",
-                Size = new System.Drawing.Size(400, 330),
+                Size = new System.Drawing.Size(400, 250),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -176,33 +176,17 @@ namespace QACORDMS.Client
                 ForeColor = System.Drawing.Color.FromArgb(0, 102, 204)
             };
 
-            var lblCurrentPassword = new Label
-            {
-                Text = "Current Password:",
-                Location = new System.Drawing.Point(20, 55),
-                Size = new System.Drawing.Size(120, 20),
-                Font = new System.Drawing.Font("Segoe UI", 9F)
-            };
-
-            var txtCurrentPassword = new TextBox
-            {
-                Location = new System.Drawing.Point(20, 80),
-                Size = new System.Drawing.Size(340, 25),
-                UseSystemPasswordChar = true,
-                Font = new System.Drawing.Font("Segoe UI", 9F)
-            };
-
             var lblNewPassword = new Label
             {
                 Text = "New Password:",
-                Location = new System.Drawing.Point(20, 115),
+                Location = new System.Drawing.Point(20, 55),
                 Size = new System.Drawing.Size(120, 20),
                 Font = new System.Drawing.Font("Segoe UI", 9F)
             };
 
             var txtNewPassword = new TextBox
             {
-                Location = new System.Drawing.Point(20, 140),
+                Location = new System.Drawing.Point(20, 80),
                 Size = new System.Drawing.Size(340, 25),
                 UseSystemPasswordChar = true,
                 Font = new System.Drawing.Font("Segoe UI", 9F)
@@ -211,14 +195,14 @@ namespace QACORDMS.Client
             var lblConfirmPassword = new Label
             {
                 Text = "Confirm New Password:",
-                Location = new System.Drawing.Point(20, 175),
+                Location = new System.Drawing.Point(20, 115),
                 Size = new System.Drawing.Size(150, 20),
                 Font = new System.Drawing.Font("Segoe UI", 9F)
             };
 
             var txtConfirmPassword = new TextBox
             {
-                Location = new System.Drawing.Point(20, 200),
+                Location = new System.Drawing.Point(20, 140),
                 Size = new System.Drawing.Size(340, 25),
                 UseSystemPasswordChar = true,
                 Font = new System.Drawing.Font("Segoe UI", 9F)
@@ -227,7 +211,7 @@ namespace QACORDMS.Client
             var btnChange = new Button
             {
                 Text = "Change Password",
-                Location = new System.Drawing.Point(180, 235),
+                Location = new System.Drawing.Point(180, 175),
                 Size = new System.Drawing.Size(120, 30),
                 DialogResult = DialogResult.OK,
                 BackColor = System.Drawing.Color.FromArgb(0, 102, 204),
@@ -238,7 +222,7 @@ namespace QACORDMS.Client
             var btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new System.Drawing.Point(310, 235),
+                Location = new System.Drawing.Point(310, 175),
                 Size = new System.Drawing.Size(70, 30),
                 DialogResult = DialogResult.Cancel,
                 BackColor = System.Drawing.Color.Gray,
@@ -247,20 +231,13 @@ namespace QACORDMS.Client
             };
 
             dialog.Controls.AddRange(new Control[] {
-                lblInfo, lblCurrentPassword, txtCurrentPassword,
-                lblNewPassword, txtNewPassword, lblConfirmPassword,
+                lblInfo, lblNewPassword, txtNewPassword, lblConfirmPassword,
                 txtConfirmPassword, btnChange, btnCancel
             });
 
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 // Validate inputs
-                if (string.IsNullOrWhiteSpace(txtCurrentPassword.Text))
-                {
-                    MessageBox.Show("Please enter the current password.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
                 if (string.IsNullOrWhiteSpace(txtNewPassword.Text))
                 {
                     MessageBox.Show("Please enter a new password.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -284,7 +261,6 @@ namespace QACORDMS.Client
                     var changePasswordRequest = new ChangePasswordRequest
                     {
                         UserId = userId,
-                        CurrentPassword = txtCurrentPassword.Text,
                         NewPassword = txtNewPassword.Text
                     };
 
@@ -295,7 +271,7 @@ namespace QACORDMS.Client
                     }
                     else
                     {
-                        MessageBox.Show("Failed to change password. Please check the current password and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Failed to change password. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 catch (Exception ex)
