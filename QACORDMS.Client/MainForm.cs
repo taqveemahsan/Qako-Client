@@ -888,8 +888,23 @@ namespace QACORDMS.Client
                         if (openFileDialog.ShowDialog() == DialogResult.OK)
                         {
                             string filePath = openFileDialog.FileName;
+
+                            // Use CurrentFolderId if available, otherwise use project root folder
+                            string targetFolderId = CurrentFolderId ?? _selectedProject.GoogleDriveFolderId;
+
+                            // Get file info for debugging
+                            var fileInfo = new FileInfo(filePath);
+
+                            Console.WriteLine($"=== EXISTING FILE UPLOAD DEBUG ===");
+                            Console.WriteLine($"Upload target folder ID: {targetFolderId}");
+                            Console.WriteLine($"Selected file: {filePath}");
+                            Console.WriteLine($"File size: {fileInfo.Length} bytes");
+                            Console.WriteLine($"CurrentFolderId: {CurrentFolderId}");
+                            Console.WriteLine($"Project GoogleDriveFolderId: {_selectedProject?.GoogleDriveFolderId}");
+                            Console.WriteLine($"Selected Project: {_selectedProject?.ProjectName}");
+
                             UpdateStatusLabel($"Uploading: {Path.GetFileName(filePath)}...");
-                            string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, CurrentFolderId);
+                            string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, targetFolderId);
                             //MessageBox.Show($"File '{Path.GetFileName(filePath)}' uploaded successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             UpdateStatusLabel("Upload complete.");
                             await RefreshFileList();
@@ -898,6 +913,7 @@ namespace QACORDMS.Client
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"Upload error: {ex.Message}");
                     MessageBox.Show($"Failed to upload file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     UpdateStatusLabel("Error uploading file.");
                 }
@@ -1134,8 +1150,20 @@ namespace QACORDMS.Client
                             File.WriteAllText(tempFilePath, "");
                         }
 
+                        // Get file info for debugging
+                        var fileInfo = new FileInfo(tempFilePath);
+                        string targetFolderId = CurrentFolderId ?? _selectedProject.GoogleDriveFolderId;
+
+                        Console.WriteLine($"=== NEW FILE CREATION DEBUG ===");
+                        Console.WriteLine($"Upload target folder ID: {targetFolderId}");
+                        Console.WriteLine($"Temp file path: {tempFilePath}");
+                        Console.WriteLine($"File size: {fileInfo.Length} bytes");
+                        Console.WriteLine($"CurrentFolderId: {CurrentFolderId}");
+                        Console.WriteLine($"Project GoogleDriveFolderId: {_selectedProject?.GoogleDriveFolderId}");
+                        Console.WriteLine($"Selected Project: {_selectedProject?.ProjectName}");
+
                         UpdateStatusLabel($"Uploading: {fileName}...");
-                        string uploadedFileId = await _apiHelper.UploadFileAsync(tempFilePath, CurrentFolderId ?? _selectedProject.GoogleDriveFolderId);
+                        string uploadedFileId = await _apiHelper.UploadFileAsync(tempFilePath, targetFolderId);
                         UpdateStatusLabel("Upload complete.");
 
                         if (File.Exists(tempFilePath))

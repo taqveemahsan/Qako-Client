@@ -404,6 +404,20 @@ namespace QACORDMS.Client.Helpers
         {
             try
             {
+                // Validate inputs
+                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                {
+                    throw new Exception($"File not found: {filePath}");
+                }
+
+                if (string.IsNullOrEmpty(parentFolderId))
+                {
+                    throw new Exception("Parent folder ID is required for file upload.");
+                }
+
+                Console.WriteLine($"Uploading file: {filePath}");
+                Console.WriteLine($"Parent folder ID: {parentFolderId}");
+
                 AddAuthorizationHeader();
 
                 using (var multipartContent = new MultipartFormDataContent())
@@ -413,19 +427,30 @@ namespace QACORDMS.Client.Helpers
                     multipartContent.Add(fileContent, "file", Path.GetFileName(filePath));
                     multipartContent.Add(new StringContent(parentFolderId), "ParentFolderId");
 
+                    Console.WriteLine($"Sending POST request to: DocumentSync/upload-file");
                     var response = await _httpClient.PostAsync("DocumentSync/upload-file", multipartContent);
-                    response.EnsureSuccessStatusCode();
+
+                    Console.WriteLine($"Upload response status: {response.StatusCode}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"Upload error response: {errorContent}");
+                        throw new Exception($"Upload failed with status {response.StatusCode}: {errorContent}");
+                    }
 
                     var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
                     if (result == null || string.IsNullOrEmpty(result.FileId))
                         throw new Exception("Invalid response from server: File ID not found.");
 
+                    Console.WriteLine($"Upload successful. File ID: {result.FileId}");
                     return result.FileId;
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                Console.WriteLine($"Exception in UploadFileAsync: {ex.Message}");
+                throw new Exception($"Failed to upload file: {ex.Message}");
             }
         }
 
