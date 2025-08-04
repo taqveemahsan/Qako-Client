@@ -2,7 +2,10 @@
 using QACORDMS.Client.Helpers.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -10,11 +13,22 @@ using System.Threading.Tasks;
 
 namespace QACORDMS.Client.Helpers
 {
+    public class UploadProgressEventArgs : EventArgs
+    {
+        public int TotalFiles { get; set; }
+        public int CompletedFiles { get; set; }
+        public string CurrentFileName { get; set; }
+        public double ProgressPercentage { get; set; }
+    }
+
     public class QACOAPIHelper
     {
-        //private const string _BaseUrl = "https://localhost:44372/api/"; // Local
-        private const string _BaseUrl = "https://test.ibt-learning.com/api/"; // Prod
+        private const string _BaseUrl = "https://localhost:44372/api/"; // Local
+        //private const string _BaseUrl = "https://test.ibt-learning.com/api/"; // Prod
         private readonly HttpClient _httpClient;
+
+        // Add event for progress updates
+        public event EventHandler<UploadProgressEventArgs> UploadProgressChanged;
 
         public QACOAPIHelper(HttpClient httpClient)
         {
@@ -230,28 +244,6 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
-        //public async Task<bool> UpdateClientAsync(Client client)
-        //{
-        //    AddAuthorizationHeader();
-        //    try
-        //    {
-        //        var response = await _httpClient.PostAsJsonAsync("updateClient", client);
-        //        response.EnsureSuccessStatusCode();
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        //public async Task<bool> DeleteClientAsync(Guid id)
-        //{
-        //    AddAuthorizationHeader();
-        //    var response = await _httpClient.DeleteAsync($"client/{id}");
-        //    return response.IsSuccessStatusCode;
-        //}
-
         public async Task<List<ClientProject>> GetClientProjectsAsync(Guid clientId)
         {
             AddAuthorizationHeader();
@@ -404,38 +396,41 @@ namespace QACORDMS.Client.Helpers
         {
             try
             {
-                // Validate inputs
                 if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
-                {
                     throw new Exception($"File not found: {filePath}");
-                }
 
                 if (string.IsNullOrEmpty(parentFolderId))
-                {
                     throw new Exception("Parent folder ID is required for file upload.");
-                }
-
-                Console.WriteLine($"Uploading file: {filePath}");
-                Console.WriteLine($"Parent folder ID: {parentFolderId}");
 
                 AddAuthorizationHeader();
 
                 using (var multipartContent = new MultipartFormDataContent())
+                using (var fileStream = File.OpenRead(filePath))
                 {
-                    var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(filePath));
+                    var fileContent = new ProgressableStreamContent(
+                        fileStream,
+                        81920, // 80KB buffer for efficiency
+                        (sent, total) =>
+                        {
+                            double percent = total > 0 ? (sent * 100.0 / total) : 0;
+                            UploadProgressChanged?.Invoke(this, new UploadProgressEventArgs
+                            {
+                                TotalFiles = 1,
+                                CompletedFiles = sent == total ? 1 : 0,
+                                CurrentFileName = Path.GetFileName(filePath),
+                                ProgressPercentage = percent
+                            });
+                        });
+
                     fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
                     multipartContent.Add(fileContent, "file", Path.GetFileName(filePath));
                     multipartContent.Add(new StringContent(parentFolderId), "ParentFolderId");
 
-                    Console.WriteLine($"Sending POST request to: DocumentSync/upload-file");
                     var response = await _httpClient.PostAsync("DocumentSync/upload-file", multipartContent);
-
-                    Console.WriteLine($"Upload response status: {response.StatusCode}");
 
                     if (!response.IsSuccessStatusCode)
                     {
                         var errorContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine($"Upload error response: {errorContent}");
                         throw new Exception($"Upload failed with status {response.StatusCode}: {errorContent}");
                     }
 
@@ -443,13 +438,11 @@ namespace QACORDMS.Client.Helpers
                     if (result == null || string.IsNullOrEmpty(result.FileId))
                         throw new Exception("Invalid response from server: File ID not found.");
 
-                    Console.WriteLine($"Upload successful. File ID: {result.FileId}");
                     return result.FileId;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception in UploadFileAsync: {ex.Message}");
                 throw new Exception($"Failed to upload file: {ex.Message}");
             }
         }
@@ -475,14 +468,6 @@ namespace QACORDMS.Client.Helpers
             response.EnsureSuccessStatusCode();
             return true;
         }
-
-        //public async Task<bool> DeleteUserAsync(Guid userId)
-        //{
-        //    AddAuthorizationHeader();
-        //    var response = await _httpClient.DeleteAsync($"Auth/delete/{userId}"); // Fixed extra slash
-        //    response.EnsureSuccessStatusCode();
-        //    return true;
-        //}
 
         public async Task<bool> DeleteUserAsync(Guid id)
         {
@@ -735,26 +720,6 @@ namespace QACORDMS.Client.Helpers
                 throw;
             }
         }
-        //public async Task<bool> RenameFileAsync(string fileId, string newName)
-        //{
-        //    AddAuthorizationHeader();
-        //    try
-        //    {
-        //        var renameRequest = new
-        //        {
-        //            fileId = fileId,
-        //            newName = newName
-        //        };
-
-        //        var response = await _httpClient.PostAsJsonAsync("DocumentSync/rename", renameRequest);
-        //        response.EnsureSuccessStatusCode();
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception($"Failed to rename file: {ex.Message}");
-        //    }
-        //}
 
         public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
         {
@@ -786,30 +751,86 @@ namespace QACORDMS.Client.Helpers
             AddAuthorizationHeader();
             try
             {
-                Console.WriteLine($"Attempting to delete file with ID: {fileId}");
-
-                // Using POST method as shown in the API screenshot
                 var response = await _httpClient.PostAsync($"DocumentSync/delete-file/{fileId}", null);
-
-                Console.WriteLine($"Delete file response status: {response.StatusCode}");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("File deleted successfully");
                     return true;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // File not found, treat as already deleted
+                    return false;
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Delete file failed: {response.StatusCode} - {errorContent}");
                     throw new Exception($"Failed to delete file: {response.StatusCode} - {errorContent}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception in DeleteFileAsync: {ex.Message}");
                 throw new Exception($"Error deleting file: {ex.Message}");
             }
+        }
+
+        private async Task WaitForFileRelease(string filePath)
+        {
+            int maxRetries = 20;
+            int delayMs = 1000;
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    using (var stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                    {
+                        return;
+                    }
+                }
+                catch (IOException)
+                {
+                    await Task.Delay(delayMs);
+                }
+            }
+            throw new IOException($"File {filePath} remained locked after {maxRetries} attempts.");
+        }
+    }
+
+    // Custom StreamContent that supports progress reporting
+    public class ProgressableStreamContent : HttpContent
+    {
+        private const int defaultBufferSize = 4096;
+        private readonly Stream _content;
+        private readonly int _bufferSize;
+        private readonly Action<long, long> _progress;
+
+        public ProgressableStreamContent(Stream content, int bufferSize, Action<long, long> progress)
+        {
+            _content = content ?? throw new ArgumentNullException(nameof(content));
+            _bufferSize = bufferSize > 0 ? bufferSize : defaultBufferSize;
+            _progress = progress;
+        }
+
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        {
+            var buffer = new byte[_bufferSize];
+            long size = _content.Length;
+            long uploaded = 0;
+            int read;
+            _content.Position = 0;
+
+            while ((read = await _content.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                await stream.WriteAsync(buffer, 0, read);
+                uploaded += read;
+                _progress?.Invoke(uploaded, size);
+            }
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = _content.Length;
+            return true;
         }
     }
 }

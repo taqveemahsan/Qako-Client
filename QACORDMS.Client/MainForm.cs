@@ -876,48 +876,53 @@ namespace QACORDMS.Client
                 return;
             }
 
-            await RunWithLoader(async () =>
+            try
             {
-                try
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
                 {
-                    using (OpenFileDialog openFileDialog = new OpenFileDialog())
+                    openFileDialog.Title = "Select File to Upload";
+                    openFileDialog.Filter = "All Files (*.*)|*.*";
+
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
                     {
-                        openFileDialog.Title = "Select File to Upload";
-                        openFileDialog.Filter = "All Files (*.*)|*.*";
+                        string filePath = openFileDialog.FileName;
+                        string targetFolderId = CurrentFolderId ?? _selectedProject.GoogleDriveFolderId;
 
-                        if (openFileDialog.ShowDialog() == DialogResult.OK)
+                        // Subscribe to progress events
+                        _apiHelper.UploadProgressChanged += (s, progress) =>
                         {
-                            string filePath = openFileDialog.FileName;
+                            if (loaderLabel.InvokeRequired)
+                            {
+                                loaderLabel.Invoke(new Action(() =>
+                                {
+                                    loaderLabel.Text = $"Uploading: {progress.CurrentFileName}\n{progress.ProgressPercentage:F1}%";
+                                    loaderLabel.AutoSize = true;
+                                    CenterLoaderControls();
+                                }));
+                            }
+                            else
+                            {
+                                loaderLabel.Text = $"Uploading: {progress.CurrentFileName}\n{progress.ProgressPercentage:F1}%";
+                            }
+                        };
 
-                            // Use CurrentFolderId if available, otherwise use project root folder
-                            string targetFolderId = CurrentFolderId ?? _selectedProject.GoogleDriveFolderId;
+                        ShowLoader();
+                        string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, targetFolderId);
+                        HideLoader();
 
-                            // Get file info for debugging
-                            var fileInfo = new FileInfo(filePath);
+                        // Reset loader label
+                        loaderLabel.Text = "Loading...";
 
-                            Console.WriteLine($"=== EXISTING FILE UPLOAD DEBUG ===");
-                            Console.WriteLine($"Upload target folder ID: {targetFolderId}");
-                            Console.WriteLine($"Selected file: {filePath}");
-                            Console.WriteLine($"File size: {fileInfo.Length} bytes");
-                            Console.WriteLine($"CurrentFolderId: {CurrentFolderId}");
-                            Console.WriteLine($"Project GoogleDriveFolderId: {_selectedProject?.GoogleDriveFolderId}");
-                            Console.WriteLine($"Selected Project: {_selectedProject?.ProjectName}");
-
-                            UpdateStatusLabel($"Uploading: {Path.GetFileName(filePath)}...");
-                            string uploadedFileId = await _apiHelper.UploadFileAsync(filePath, targetFolderId);
-                            //MessageBox.Show($"File '{Path.GetFileName(filePath)}' uploaded successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            UpdateStatusLabel("Upload complete.");
-                            await RefreshFileList();
-                        }
+                        await RefreshFileList();
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Upload error: {ex.Message}");
-                    MessageBox.Show($"Failed to upload file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    UpdateStatusLabel("Error uploading file.");
-                }
-            });
+            }
+            catch (Exception ex)
+            {
+                HideLoader();
+                MessageBox.Show($"Failed to upload file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatusLabel("Error uploading file.");
+            }
         }
 
         private void AddUserMenuItem_Click(object sender, EventArgs e)
@@ -1712,7 +1717,6 @@ namespace QACORDMS.Client
             //throw new NotImplementedException();
         }
 
-
         private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
         {
             try
@@ -1729,31 +1733,23 @@ namespace QACORDMS.Client
                 string originalHash = await ComputeFileHashSafe(filePath);
 
                 UpdateStatusLabel($"Monitoring changes in {fileName}...");
-                UpdateStatusLabel($"Initial - LastWriteTime: {originalLastWriteTime}");
-                UpdateStatusLabel($"Initial - Size: {originalFileSize} bytes");
-                UpdateStatusLabel($"Initial - Hash: {originalHash}");
 
-                // Create watcher with proper configuration
                 using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
                 {
                     watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
                     watcher.IncludeSubdirectories = false;
-                    watcher.InternalBufferSize = 4096 * 4; // Increase buffer size
+                    watcher.InternalBufferSize = 4096 * 4;
 
-                    // Track last change time to avoid multiple rapid events
                     DateTime lastChangeTime = DateTime.MinValue;
 
                     watcher.Changed += async (s, e) =>
                     {
                         try
                         {
-                            // Debounce rapid changes (Office apps trigger multiple events)
                             if (DateTime.Now.Subtract(lastChangeTime).TotalMilliseconds < 100)
                                 return;
 
                             lastChangeTime = DateTime.Now;
-
-                            // Wait a bit for file to be fully written
                             await Task.Delay(200);
 
                             if (File.Exists(filePath))
@@ -1762,57 +1758,18 @@ namespace QACORDMS.Client
                                 long currentFileSize = new FileInfo(filePath).Length;
                                 string currentHash = await ComputeFileHashSafe(filePath);
 
-                                UpdateStatusLabel($"FileSystemWatcher triggered for {fileName}:");
-                                UpdateStatusLabel($"Current - LastWriteTime: {currentLastWriteTime}");
-                                UpdateStatusLabel($"Current - Size: {currentFileSize} bytes");
-                                UpdateStatusLabel($"Current - Hash: {currentHash}");
-
-                                // More comprehensive change detection
-                                bool hasChanged = false;
-
-                                // Check time difference (with tolerance for file system precision)
-                                if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1)
-                                {
-                                    UpdateStatusLabel("Change detected: LastWriteTime differs");
-                                    hasChanged = true;
-                                }
-
-                                // Check size difference
-                                if (currentFileSize != originalFileSize)
-                                {
-                                    UpdateStatusLabel($"Change detected: Size differs ({originalFileSize} -> {currentFileSize})");
-                                    hasChanged = true;
-                                }
-
-                                // Check hash difference (most reliable for content changes)
-                                if (!string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    UpdateStatusLabel("Change detected: Hash differs");
-                                    hasChanged = true;
-                                }
-
-                                if (hasChanged)
+                                if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+                                    currentFileSize != originalFileSize ||
+                                    !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
                                 {
                                     fileChanged = true;
-                                    UpdateStatusLabel($"Content change detected in {fileName}, scheduling upload...");
-
-                                    // Schedule upload after a delay to ensure file is stable
-                                    _ = Task.Run(async () =>
-                                    {
-                                        //await Task.Delay(200); // Wait for file to be fully saved
-                                        await UploadFileWithRetry(filePath, fileId, fileName);
-
-                                        // Update reference values after successful upload
-                                        originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                                        originalFileSize = new FileInfo(filePath).Length;
-                                        originalHash = await ComputeFileHashSafe(filePath);
-                                    });
+                                    UpdateStatusLabel($"Change detected in {fileName}, will upload after closing.");
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            UpdateStatusLabel($"Error in FileSystemWatcher for {fileName}: {ex.Message}");
+                            UpdateStatusLabel($"Watcher error for {fileName}: {ex.Message}");
                         }
                     };
 
@@ -1825,60 +1782,35 @@ namespace QACORDMS.Client
                     UpdateStatusLabel($"File monitoring started for {fileName}");
 
                     // Wait for process to complete
-                    UpdateStatusLabel($"Waiting for process to exit for {fileName}...");
+                    UpdateStatusLabel($"Waiting for {fileName} to close...");
                     await Task.Run(() => process.WaitForExit());
 
-                    // Important: Wait longer for Office apps to fully release files
-                    UpdateStatusLabel($"Process exited for {fileName}. Waiting for file to be fully saved...");
-                    //await Task.Delay(1000); // Increased to 10 seconds for Office apps
+                    // Wait for file to be released
+                    UpdateStatusLabel($"Waiting for {fileName} to be released by Office...");
+                    await WaitForFileRelease(filePath);
 
-                    // Force close any remaining processes that might be holding the file
-                    await ForceCloseProcesses(filePath);
-
-                    // Final comprehensive check for changes
-                    //await Task.Delay(1000); // Additional wait after force-closing processes
-
+                    // Final check for changes
                     if (File.Exists(filePath))
                     {
                         DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
                         long currentFileSize = new FileInfo(filePath).Length;
                         string currentHash = await ComputeFileHashSafe(filePath);
 
-                        UpdateStatusLabel($"Final check for {fileName}:");
-                        UpdateStatusLabel($"Final - LastWriteTime: {currentLastWriteTime}");
-                        UpdateStatusLabel($"Final - Size: {currentFileSize} bytes");
-                        UpdateStatusLabel($"Final - Hash: {currentHash}");
-
-                        // Comprehensive final check
-                        bool finalChanged = false;
-
-                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1)
-                        {
-                            UpdateStatusLabel("Final change detected: LastWriteTime differs");
-                            finalChanged = true;
-                        }
-
-                        if (currentFileSize != originalFileSize)
-                        {
-                            UpdateStatusLabel($"Final change detected: Size differs ({originalFileSize} -> {currentFileSize})");
-                            finalChanged = true;
-                        }
-
-                        if (!string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
-                        {
-                            UpdateStatusLabel("Final change detected: Hash differs");
-                            finalChanged = true;
-                        }
-
-                        if (finalChanged)
+                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+                            currentFileSize != originalFileSize ||
+                            !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
                         {
                             fileChanged = true;
-                            UpdateStatusLabel($"Final change detected in {fileName}, uploading...");
-                            await UploadFileWithRetry(filePath, fileId, fileName);
+                            UpdateStatusLabel($"Final change detected in {fileName}, preparing to upload...");
                         }
                     }
 
-                    if (!fileChanged)
+                    if (fileChanged)
+                    {
+                        UpdateStatusLabel($"Uploading updated {fileName} (with retry)...");
+                        await UploadFileWithRetry(filePath, fileId, fileName);
+                    }
+                    else
                     {
                         UpdateStatusLabel($"No changes detected in {fileName}.");
                     }
@@ -1886,15 +1818,196 @@ namespace QACORDMS.Client
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
             }
             finally
             {
-                // Clean up temp file with proper retry mechanism
                 await CleanupTempFile(filePath, fileName);
             }
         }
+
+        //private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        //{
+        //    try
+        //    {
+        //        if (!File.Exists(filePath))
+        //        {
+        //            UpdateStatusLabel($"Error: File {fileName} does not exist at {filePath}.");
+        //            return;
+        //        }
+
+        //        bool fileChanged = false;
+        //        DateTime originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //        long originalFileSize = new FileInfo(filePath).Length;
+        //        string originalHash = await ComputeFileHashSafe(filePath);
+
+        //        UpdateStatusLabel($"Monitoring changes in {fileName}...");
+        //        UpdateStatusLabel($"Initial - LastWriteTime: {originalLastWriteTime}");
+        //        UpdateStatusLabel($"Initial - Size: {originalFileSize} bytes");
+        //        UpdateStatusLabel($"Initial - Hash: {originalHash}");
+
+        //        // Create watcher with proper configuration
+        //        using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+        //        {
+        //            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
+        //            watcher.IncludeSubdirectories = false;
+        //            watcher.InternalBufferSize = 4096 * 4; // Increase buffer size
+
+        //            // Track last change time to avoid multiple rapid events
+        //            DateTime lastChangeTime = DateTime.MinValue;
+
+        //            watcher.Changed += async (s, e) =>
+        //            {
+        //                try
+        //                {
+        //                    // Debounce rapid changes (Office apps trigger multiple events)
+        //                    if (DateTime.Now.Subtract(lastChangeTime).TotalMilliseconds < 100)
+        //                        return;
+
+        //                    lastChangeTime = DateTime.Now;
+
+        //                    // Wait a bit for file to be fully written
+        //                    await Task.Delay(200);
+
+        //                    if (File.Exists(filePath))
+        //                    {
+        //                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //                        long currentFileSize = new FileInfo(filePath).Length;
+        //                        string currentHash = await ComputeFileHashSafe(filePath);
+
+        //                        UpdateStatusLabel($"FileSystemWatcher triggered for {fileName}:");
+        //                        UpdateStatusLabel($"Current - LastWriteTime: {currentLastWriteTime}");
+        //                        UpdateStatusLabel($"Current - Size: {currentFileSize} bytes");
+        //                        UpdateStatusLabel($"Current - Hash: {currentHash}");
+
+        //                        // More comprehensive change detection
+        //                        bool hasChanged = false;
+
+        //                        // Check time difference (with tolerance for file system precision)
+        //                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1)
+        //                        {
+        //                            UpdateStatusLabel("Change detected: LastWriteTime differs");
+        //                            hasChanged = true;
+        //                        }
+
+        //                        // Check size difference
+        //                        if (currentFileSize != originalFileSize)
+        //                        {
+        //                            UpdateStatusLabel($"Change detected: Size differs ({originalFileSize} -> {currentFileSize})");
+        //                            hasChanged = true;
+        //                        }
+
+        //                        // Check hash difference (most reliable for content changes)
+        //                        if (!string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+        //                        {
+        //                            UpdateStatusLabel("Change detected: Hash differs");
+        //                            hasChanged = true;
+        //                        }
+
+        //                        if (hasChanged)
+        //                        {
+        //                            fileChanged = true;
+        //                            UpdateStatusLabel($"Content change detected in {fileName}, scheduling upload...");
+
+        //                            // Schedule upload after a delay to ensure file is stable
+        //                            _ = Task.Run(async () =>
+        //                            {
+        //                                //await Task.Delay(200); // Wait for file to be fully saved
+        //                                await UploadFileWithRetry(filePath, fileId, fileName);
+
+        //                                // Update reference values after successful upload
+        //                                originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //                                originalFileSize = new FileInfo(filePath).Length;
+        //                                originalHash = await ComputeFileHashSafe(filePath);
+        //                            });
+        //                        }
+        //                    }
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    UpdateStatusLabel($"Error in FileSystemWatcher for {fileName}: {ex.Message}");
+        //                }
+        //            };
+
+        //            watcher.Error += (s, e) =>
+        //            {
+        //                UpdateStatusLabel($"FileSystemWatcher error for {fileName}: {e.GetException().Message}");
+        //            };
+
+        //            watcher.EnableRaisingEvents = true;
+        //            UpdateStatusLabel($"File monitoring started for {fileName}");
+
+        //            // Wait for process to complete
+        //            UpdateStatusLabel($"Waiting for process to exit for {fileName}...");
+        //            await Task.Run(() => process.WaitForExit());
+
+        //            // Important: Wait longer for Office apps to fully release files
+        //            UpdateStatusLabel($"Process exited for {fileName}. Waiting for file to be fully saved...");
+        //            //await Task.Delay(1000); // Increased to 10 seconds for Office apps
+
+        //            // Force close any remaining processes that might be holding the file
+        //            await ForceCloseProcesses(filePath);
+
+        //            // Final comprehensive check for changes
+        //            //await Task.Delay(1000); // Additional wait after force-closing processes
+
+        //            if (File.Exists(filePath))
+        //            {
+        //                DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //                long currentFileSize = new FileInfo(filePath).Length;
+        //                string currentHash = await ComputeFileHashSafe(filePath);
+
+        //                UpdateStatusLabel($"Final check for {fileName}:");
+        //                UpdateStatusLabel($"Final - LastWriteTime: {currentLastWriteTime}");
+        //                UpdateStatusLabel($"Final - Size: {currentFileSize} bytes");
+        //                UpdateStatusLabel($"Final - Hash: {currentHash}");
+
+        //                // Comprehensive final check
+        //                bool finalChanged = false;
+
+        //                if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1)
+        //                {
+        //                    UpdateStatusLabel("Final change detected: LastWriteTime differs");
+        //                    finalChanged = true;
+        //                }
+
+        //                if (currentFileSize != originalFileSize)
+        //                {
+        //                    UpdateStatusLabel($"Final change detected: Size differs ({originalFileSize} -> {currentFileSize})");
+        //                    finalChanged = true;
+        //                }
+
+        //                if (!string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+        //                {
+        //                    UpdateStatusLabel("Final change detected: Hash differs");
+        //                    finalChanged = true;
+        //                }
+
+        //                if (finalChanged)
+        //                {
+        //                    fileChanged = true;
+        //                    UpdateStatusLabel($"Final change detected in {fileName}, uploading...");
+        //                    await UploadFileWithRetry(filePath, fileId, fileName);
+        //                }
+        //            }
+
+        //            if (!fileChanged)
+        //            {
+        //                UpdateStatusLabel($"No changes detected in {fileName}.");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Error updating {fileName}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        // Clean up temp file with proper retry mechanism
+        //        await CleanupTempFile(filePath, fileName);
+        //    }
+        //}
 
         // Helper method for safe hash computation
         private async Task<string> ComputeFileHashSafe(string filePath)
