@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QACORDMS.Client", "QACORDMS
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "BAKERTILLY-DMS", "Bakertilly\Bakertilly.vdproj", "{541CEF8F-BFC1-851F-5BEB-6D702CC6D155}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AlamAulakh", "AlamAulakh\AlamAulakh.vdproj", "{B7AE91AE-CF47-C1FD-7CC9-EF2A9FBAF1D9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,8 @@ Global
 		{541CEF8F-BFC1-851F-5BEB-6D702CC6D155}.Debug|Any CPU.Build.0 = Debug
 		{541CEF8F-BFC1-851F-5BEB-6D702CC6D155}.Release|Any CPU.ActiveCfg = Release
 		{541CEF8F-BFC1-851F-5BEB-6D702CC6D155}.Release|Any CPU.Build.0 = Release
+		{B7AE91AE-CF47-C1FD-7CC9-EF2A9FBAF1D9}.Debug|Any CPU.ActiveCfg = Debug
+		{B7AE91AE-CF47-C1FD-7CC9-EF2A9FBAF1D9}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

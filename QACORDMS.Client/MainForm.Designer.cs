@@ -406,7 +406,7 @@
             MainMenuStrip = menuStrip;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "BAKERTILLY DMS";
+            Text = "Alam Aulakh DMS";
             menuStrip.ResumeLayout(false);
             menuStrip.PerformLayout();
             statusStrip.ResumeLayout(false);

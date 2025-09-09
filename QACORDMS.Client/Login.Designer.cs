@@ -174,7 +174,7 @@
             MinimizeBox = false;
             Name = "Login";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Login - BAKERTILLY DMS";
+            Text = "Login - Alam Aulakh DMS";
             Load += Login_Load;
             panelContainer.ResumeLayout(false);
             panelContainer.PerformLayout();
