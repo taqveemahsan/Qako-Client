@@ -1738,7 +1738,6 @@ namespace QACORDMS.Client
                 {
                     watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
                     watcher.IncludeSubdirectories = false;
-                    watcher.InternalBufferSize = 4096 * 4;
 
                     DateTime lastChangeTime = DateTime.MinValue;
 
@@ -1773,58 +1772,195 @@ namespace QACORDMS.Client
                         }
                     };
 
-                    watcher.Error += (s, e) =>
-                    {
-                        UpdateStatusLabel($"FileSystemWatcher error for {fileName}: {e.GetException().Message}");
-                    };
-
                     watcher.EnableRaisingEvents = true;
-                    UpdateStatusLabel($"File monitoring started for {fileName}");
 
-                    // Wait for process to complete
-                    UpdateStatusLabel($"Waiting for {fileName} to close...");
-                    await Task.Run(() => process.WaitForExit());
-
-                    // Wait for file to be released
-                    UpdateStatusLabel($"Waiting for {fileName} to be released by Office...");
-                    await WaitForFileRelease(filePath);
-
-                    // Final check for changes
-                    if (File.Exists(filePath))
+                    try
                     {
-                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                        long currentFileSize = new FileInfo(filePath).Length;
-                        string currentHash = await ComputeFileHashSafe(filePath);
+                        // Wait for the process to exit
+                        await Task.Run(() => process.WaitForExit());
 
-                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
-                            currentFileSize != originalFileSize ||
-                            !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+                        // Important: Wait a bit after process exits before checking file
+                        await Task.Delay(2000);
+
+                        // Check if any other process is using the file
+                        while (IsFileLocked(filePath))
                         {
-                            fileChanged = true;
-                            UpdateStatusLabel($"Final change detected in {fileName}, preparing to upload...");
+                            await Task.Delay(1000); // Wait 1 second before checking again
+                        }
+
+                        if (fileChanged)
+                        {
+                            UpdateStatusLabel($"Uploading changes to {fileName}...");
+                            var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+                            if (response.IsSuccessStatusCode)
+                            {
+                                UpdateStatusLabel($"Changes uploaded for {fileName}");
+                            }
+                            else
+                            {
+                                UpdateStatusLabel($"Failed to upload changes for {fileName}");
+                            }
+                        }
+
+                        // Only delete the file if it's not being used
+                        if (!IsFileLocked(filePath) && File.Exists(filePath))
+                        {
+                            File.Delete(filePath);
+                            UpdateStatusLabel($"Cleaned up temporary file: {fileName}");
+                        }
+                        else
+                        {
+                            UpdateStatusLabel($"File still in use, skipping cleanup: {fileName}");
                         }
                     }
-
-                    if (fileChanged)
+                    catch (Exception ex)
                     {
-                        UpdateStatusLabel($"Uploading updated {fileName} (with retry)...");
-                        await UploadFileWithRetry(filePath, fileId, fileName);
+                        UpdateStatusLabel($"Error monitoring {fileName}: {ex.Message}");
                     }
-                    else
+                    finally
                     {
-                        UpdateStatusLabel($"No changes detected in {fileName}.");
+                        if (openedFiles.ContainsKey(filePath))
+                        {
+                            openedFiles.Remove(filePath);
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
-            }
-            finally
-            {
-                await CleanupTempFile(filePath, fileName);
+                UpdateStatusLabel($"Error in file monitoring: {ex.Message}");
             }
         }
+
+        // Add this helper method to check if a file is locked
+        private bool IsFileLocked(string filePath)
+        {
+            try
+            {
+                using (FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    stream.Close();
+                }
+                return false;
+            }
+            catch (IOException)
+            {
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        //private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        //{
+        //    try
+        //    {
+        //        if (!File.Exists(filePath))
+        //        {
+        //            UpdateStatusLabel($"Error: File {fileName} does not exist at {filePath}.");
+        //            return;
+        //        }
+
+        //        bool fileChanged = false;
+        //        DateTime originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //        long originalFileSize = new FileInfo(filePath).Length;
+        //        string originalHash = await ComputeFileHashSafe(filePath);
+
+        //        UpdateStatusLabel($"Monitoring changes in {fileName}...");
+
+        //        using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+        //        {
+        //            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
+        //            watcher.IncludeSubdirectories = false;
+        //            watcher.InternalBufferSize = 4096 * 4;
+
+        //            DateTime lastChangeTime = DateTime.MinValue;
+
+        //            watcher.Changed += async (s, e) =>
+        //            {
+        //                try
+        //                {
+        //                    if (DateTime.Now.Subtract(lastChangeTime).TotalMilliseconds < 100)
+        //                        return;
+
+        //                    lastChangeTime = DateTime.Now;
+        //                    await Task.Delay(200);
+
+        //                    if (File.Exists(filePath))
+        //                    {
+        //                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //                        long currentFileSize = new FileInfo(filePath).Length;
+        //                        string currentHash = await ComputeFileHashSafe(filePath);
+
+        //                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+        //                            currentFileSize != originalFileSize ||
+        //                            !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+        //                        {
+        //                            fileChanged = true;
+        //                            UpdateStatusLabel($"Change detected in {fileName}, will upload after closing.");
+        //                        }
+        //                    }
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    UpdateStatusLabel($"Watcher error for {fileName}: {ex.Message}");
+        //                }
+        //            };
+
+        //            watcher.Error += (s, e) =>
+        //            {
+        //                UpdateStatusLabel($"FileSystemWatcher error for {fileName}: {e.GetException().Message}");
+        //            };
+
+        //            watcher.EnableRaisingEvents = true;
+        //            UpdateStatusLabel($"File monitoring started for {fileName}");
+
+        //            // Wait for process to complete
+        //            UpdateStatusLabel($"Waiting for {fileName} to close...");
+        //            await Task.Run(() => process.WaitForExit());
+
+        //            // Wait for file to be released
+        //            UpdateStatusLabel($"Waiting for {fileName} to be released by Office...");
+        //            await WaitForFileRelease(filePath);
+
+        //            // Final check for changes
+        //            if (File.Exists(filePath))
+        //            {
+        //                DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //                long currentFileSize = new FileInfo(filePath).Length;
+        //                string currentHash = await ComputeFileHashSafe(filePath);
+
+        //                if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+        //                    currentFileSize != originalFileSize ||
+        //                    !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+        //                {
+        //                    fileChanged = true;
+        //                    UpdateStatusLabel($"Final change detected in {fileName}, preparing to upload...");
+        //                }
+        //            }
+
+        //            if (fileChanged)
+        //            {
+        //                UpdateStatusLabel($"Uploading updated {fileName} (with retry)...");
+        //                await UploadFileWithRetry(filePath, fileId, fileName);
+        //            }
+        //            else
+        //            {
+        //                UpdateStatusLabel($"No changes detected in {fileName}.");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        await CleanupTempFile(filePath, fileName);
+        //    }
+        //}
 
         //private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
         //{
@@ -2667,8 +2803,8 @@ namespace QACORDMS.Client
             for (int i = 0; i < Math.Max(serverComponents.Length, currentComponents.Length); i++)
             {
                 // If one version has more components, it's considered higher
-                        //Arguments = "/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART",
-                        //Verb = "runas"
+                //Arguments = "/SILENT /NOCANCEL /NOCLOSEAPPLICATIONS /NORESTART",
+                //Verb = "runas"
                 if (i >= currentComponents.Length) return true;
 
                 // Convert components to integers
@@ -2685,7 +2821,7 @@ namespace QACORDMS.Client
 
             // If all components are equal, versions are the same
             return false;
-        
+
             //if (string.IsNullOrEmpty(serverVersion) || string.IsNullOrEmpty(currentVersion))
             //    return false;
 
@@ -2732,10 +2868,10 @@ namespace QACORDMS.Client
                 try
                 {
                     UpdateStatusLabel($"Preparing for update to version {latestVersion}...");
-                    
+
                     // Get the product code of the currently installed version
                     string productCode = GetInstalledProductCode();
-                    
+
                     // First uninstall the current version
                     UpdateStatusLabel("Removing current version...");
                     var uninstallProcess = new ProcessStartInfo
@@ -2745,22 +2881,22 @@ namespace QACORDMS.Client
                         UseShellExecute = true,
                         Verb = "runas"
                     };
-                    
+
                     Process uninstallProc = Process.Start(uninstallProcess);
                     uninstallProc.WaitForExit();
-                    
+
                     // Now proceed with downloading and installing the new version
                     UpdateStatusLabel($"Downloading update {latestVersion}...");
-                    
+
                     // Create a dedicated update directory
                     string updateDir = Path.Combine(Path.GetTempPath(), $"QACORDMS_Update_{latestVersion}");
                     if (!Directory.Exists(updateDir))
                     {
                         Directory.CreateDirectory(updateDir);
                     }
-                    
+
                     string installerPath = Path.Combine(updateDir, "Bakertilly.msi");
-                    
+
                     // Delete existing file if it exists
                     if (File.Exists(installerPath))
                     {
@@ -2778,10 +2914,10 @@ namespace QACORDMS.Client
                     using (var client = new HttpClient())
                     {
                         client.Timeout = TimeSpan.FromMinutes(5);
-                        
+
                         // Use the direct MSI URL
                         string msiDownloadUrl = "https://test.ibt-learning.com/updates/Bakertilly.msi";
-                        
+
                         var response = await client.GetAsync(msiDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
                         if (!response.IsSuccessStatusCode)
                         {
@@ -2807,7 +2943,7 @@ namespace QACORDMS.Client
                     }
 
                     UpdateStatusLabel($"Installing update {latestVersion}...");
-                    
+
                     // Launch the MSI installer
                     var processInfo = new ProcessStartInfo
                     {
@@ -2818,11 +2954,11 @@ namespace QACORDMS.Client
                     };
 
                     Process.Start(processInfo);
-                    
+
                     // Give the installer a moment to start
                     await Task.Delay(2000);
                     UpdateStatusLabel("Update started. Application will close now.");
-                    
+
                     // Exit the application
                     Application.Exit();
                 }
@@ -2859,7 +2995,7 @@ namespace QACORDMS.Client
             {
                 // Search for installed products with your app name
                 string appName = "Bakertilly"; // Must match the ProductName in your MSI
-                
+
                 using (var searcher = new System.Management.ManagementObjectSearcher(
                     "SELECT * FROM Win32_Product WHERE Name = '" + appName + "'"))
                 {
@@ -2868,7 +3004,7 @@ namespace QACORDMS.Client
                         return product["IdentifyingNumber"].ToString();
                     }
                 }
-                
+
                 return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
             }
             catch (Exception ex)
@@ -2885,7 +3021,7 @@ namespace QACORDMS.Client
             {
                 // Remove braces if present
                 upgradeCode = upgradeCode.Trim('{', '}');
-                
+
                 // Query the Windows Installer for products with this upgrade code
                 using (var searcher = new System.Management.ManagementObjectSearcher(
                     "SELECT * FROM Win32_Product WHERE UpgradeCode = '" + upgradeCode + "'"))
@@ -2895,7 +3031,7 @@ namespace QACORDMS.Client
                         return product["IdentifyingNumber"].ToString();
                     }
                 }
-                
+
                 return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
             }
             catch (Exception ex)
@@ -2904,6 +3040,7 @@ namespace QACORDMS.Client
                 return "{927F0F80-AE97-4F2D-915A-B107F887C51A}"; // Fallback to hardcoded value
             }
         }
+
     }
 }
 
