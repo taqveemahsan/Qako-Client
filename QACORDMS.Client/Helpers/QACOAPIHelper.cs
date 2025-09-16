@@ -344,6 +344,40 @@ namespace QACORDMS.Client.Helpers
             }
         }
 
+        // Add this method to QACOAPIHelper.cs
+        public async Task<string> DownloadAndSaveFileAsync(string fileId, string fileName)
+        {
+            string tempPath = Path.Combine(Path.GetTempPath(), "DriveTemp");
+            string filePath = Path.Combine(tempPath, fileName);
+
+            try
+            {
+                if (!Directory.Exists(tempPath))
+                {
+                    Directory.CreateDirectory(tempPath);
+                }
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                {
+                    await DownloadFileAsync(fileId, fileStream);
+                }
+
+                // Verify file exists and is accessible
+                if (File.Exists(filePath))
+                {
+                    return filePath;
+                }
+                else
+                {
+                    throw new FileNotFoundException($"File not found after download: {filePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error downloading file: {ex.Message}");
+            }
+        }
+
         public async Task<string> ReplaceFileAsyncV1(string fileId, string filePath)
         {
             AddAuthorizationHeader();

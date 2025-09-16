@@ -2627,8 +2627,14 @@ namespace QACORDMS.Client
                         var json = await response.Content.ReadAsStringAsync();
                         var updateInfo = System.Text.Json.JsonSerializer.Deserialize<UpdateInfo>(json);
 
-                        latestVersion = updateInfo.version;
-                        downloadUrl = updateInfo.downloadUrl;
+                        if (updateInfo == null || string.IsNullOrWhiteSpace(updateInfo.version))
+                        {
+                            UpdateStatusLabel("Update info invalid or unavailable.");
+                            return;
+                        }
+
+                        latestVersion = updateInfo.version?.Trim();
+                        downloadUrl = updateInfo.downloadUrl?.Trim();
 
                         if (IsVersionHigher(latestVersion, currentVersion))
                         {
@@ -2732,57 +2738,62 @@ namespace QACORDMS.Client
                 try
                 {
                     UpdateStatusLabel($"Preparing for update to version {latestVersion}...");
-                    
-                    // Get the product code of the currently installed version
-                    string productCode = GetInstalledProductCode();
-                    
-                    // First uninstall the current version
-                    UpdateStatusLabel("Removing current version...");
-                    var uninstallProcess = new ProcessStartInfo
+
+                    // Validate update metadata
+                    if (string.IsNullOrWhiteSpace(latestVersion))
                     {
-                        FileName = "msiexec.exe",
-                        Arguments = $"/x {productCode} /qb", // /qb for basic UI
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    };
-                    
-                    Process uninstallProc = Process.Start(uninstallProcess);
-                    uninstallProc.WaitForExit();
-                    
-                    // Now proceed with downloading and installing the new version
-                    UpdateStatusLabel($"Downloading update {latestVersion}...");
-                    
+                        throw new InvalidOperationException("Missing latest version information from update service.");
+                    }
+                    if (string.IsNullOrWhiteSpace(downloadUrl))
+                    {
+                        throw new InvalidOperationException("Update URL not provided by the update service.");
+                    }
+
+                    // Resolve download URL to absolute and derive a filename
+                    Uri resolvedUri;
+                    if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out resolvedUri))
+                    {
+                        if (Uri.TryCreate(updateApiUrl, UriKind.Absolute, out var baseUri))
+                        {
+                            if (!Uri.TryCreate(baseUri, downloadUrl, out resolvedUri))
+                            {
+                                throw new InvalidOperationException("Invalid download URL provided by update service.");
+                            }
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Invalid update API URL; cannot resolve relative download URL.");
+                        }
+                    }
+
+                    string fileNameFromUrl = Path.GetFileName(resolvedUri.LocalPath);
+                    if (string.IsNullOrWhiteSpace(fileNameFromUrl))
+                    {
+                        fileNameFromUrl = "BakertillyInstaller";
+                    }
+
                     // Create a dedicated update directory
                     string updateDir = Path.Combine(Path.GetTempPath(), $"QACORDMS_Update_{latestVersion}");
                     if (!Directory.Exists(updateDir))
                     {
                         Directory.CreateDirectory(updateDir);
                     }
-                    
-                    string installerPath = Path.Combine(updateDir, "Bakertilly.msi");
-                    
+
+                    string installerPath = Path.Combine(updateDir, fileNameFromUrl);
+
                     // Delete existing file if it exists
                     if (File.Exists(installerPath))
                     {
-                        try
-                        {
-                            File.Delete(installerPath);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogToFile($"Failed to delete existing installer: {ex.Message}");
-                        }
+                        try { File.Delete(installerPath); } catch { /* ignore */ }
                     }
 
-                    // Download the MSI installer
+                    UpdateStatusLabel($"Downloading update {latestVersion}...");
+
                     using (var client = new HttpClient())
                     {
                         client.Timeout = TimeSpan.FromMinutes(5);
-                        
-                        // Use the direct MSI URL
-                        string msiDownloadUrl = "https://test.ibt-learning.com/updates/Bakertilly.msi";
-                        
-                        var response = await client.GetAsync(msiDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
+
+                        var response = await client.GetAsync(resolvedUri, HttpCompletionOption.ResponseHeadersRead);
                         if (!response.IsSuccessStatusCode)
                         {
                             UpdateStatusLabel($"Download failed: HTTP {response.StatusCode}");
@@ -2806,18 +2817,42 @@ namespace QACORDMS.Client
                         throw new FileNotFoundException("Downloaded installer file not found", installerPath);
                     }
 
+                    // Decide installer type and run accordingly
+                    string ext = Path.GetExtension(installerPath).ToLowerInvariant();
                     UpdateStatusLabel($"Installing update {latestVersion}...");
-                    
-                    // Launch the MSI installer
-                    var processInfo = new ProcessStartInfo
-                    {
-                        FileName = "msiexec.exe",
-                        Arguments = $"/i \"{installerPath}\" /qb", // /qb for basic UI
-                        UseShellExecute = true,
-                        Verb = "runas" // Request admin privileges
-                    };
 
-                    Process.Start(processInfo);
+                    if (ext == ".msi")
+                    {
+                        // Install silently, suppress restarts, prefer per-user if allowed
+                        var processInfo = new ProcessStartInfo
+                        {
+                            FileName = "msiexec.exe",
+                            Arguments = $"/i \"{installerPath}\" /quiet /norestart REBOOT=ReallySuppress MSIINSTALLPERUSER=1",
+                            UseShellExecute = false,
+                            CreateNoWindow = true,
+                            WindowStyle = ProcessWindowStyle.Hidden
+                        };
+
+                        Process.Start(processInfo);
+                    }
+                    else if (ext == ".exe")
+                    {
+                        // Try to run with common silent + no-restart flags
+                        var processInfo = new ProcessStartInfo
+                        {
+                            FileName = installerPath,
+                            Arguments = "/SILENT /NORESTART /NOCANCEL /NOCLOSEAPPLICATIONS",
+                            UseShellExecute = false,
+                            CreateNoWindow = true,
+                            WindowStyle = ProcessWindowStyle.Hidden
+                        };
+
+                        Process.Start(processInfo);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"Unsupported installer type: '{ext}'.");
+                    }
                     
                     // Give the installer a moment to start
                     await Task.Delay(2000);
