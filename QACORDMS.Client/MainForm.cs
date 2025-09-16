@@ -1727,119 +1727,204 @@ namespace QACORDMS.Client
                     return;
                 }
 
-                bool fileChanged = false;
+                // ----- Snapshot original state
                 DateTime originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
                 long originalFileSize = new FileInfo(filePath).Length;
                 string originalHash = await ComputeFileHashSafe(filePath);
 
                 UpdateStatusLabel($"Monitoring changes in {fileName}...");
 
-                using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+                // ----- File change tracking (watcher + flag)
+                bool fileChanged = false;
+                DateTime lastChangeTime = DateTime.MinValue;
+
+                using var watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath)!, Path.GetFileName(filePath))
                 {
-                    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
-                    watcher.IncludeSubdirectories = false;
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName | NotifyFilters.Attributes,
+                    IncludeSubdirectories = false,
+                    EnableRaisingEvents = true
+                };
 
-                    DateTime lastChangeTime = DateTime.MinValue;
-
-                    watcher.Changed += async (s, e) =>
-                    {
-                        try
-                        {
-                            if (DateTime.Now.Subtract(lastChangeTime).TotalMilliseconds < 100)
-                                return;
-
-                            lastChangeTime = DateTime.Now;
-                            await Task.Delay(200);
-
-                            if (File.Exists(filePath))
-                            {
-                                DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
-                                long currentFileSize = new FileInfo(filePath).Length;
-                                string currentHash = await ComputeFileHashSafe(filePath);
-
-                                if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
-                                    currentFileSize != originalFileSize ||
-                                    !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    fileChanged = true;
-                                    UpdateStatusLabel($"Change detected in {fileName}, will upload after closing.");
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            UpdateStatusLabel($"Watcher error for {fileName}: {ex.Message}");
-                        }
-                    };
-
-                    watcher.EnableRaisingEvents = true;
-
+                FileSystemEventHandler onChange = async (s, e) =>
+                {
                     try
                     {
-                        // Wait for the process to exit
-                        await Task.Run(() => process.WaitForExit());
+                        // Debounce
+                        if ((DateTime.Now - lastChangeTime).TotalMilliseconds < 120) return;
+                        lastChangeTime = DateTime.Now;
 
-                        // Important: Wait a bit after process exits before checking file
-                        await Task.Delay(2000);
+                        // Small settle delay because Office writes in bursts
+                        await Task.Delay(250);
 
-                        // Check if any other process is using the file
-                        while (IsFileLocked(filePath))
+                        if (File.Exists(filePath))
                         {
-                            await Task.Delay(1000); // Wait 1 second before checking again
-                        }
+                            DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                            long currentFileSize = new FileInfo(filePath).Length;
+                            string currentHash = await ComputeFileHashSafe(filePath);
 
-                        if (fileChanged)
-                        {
-                            UpdateStatusLabel($"Uploading changes to {fileName}...");
-                            var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
-                            if (response.IsSuccessStatusCode)
+                            if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+                                currentFileSize != originalFileSize ||
+                                !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
                             {
-                                UpdateStatusLabel($"Changes uploaded for {fileName}");
+                                fileChanged = true;
+                                UpdateStatusLabel($"Change detected in {fileName}, will upload after closing.");
                             }
-                            else
-                            {
-                                UpdateStatusLabel($"Failed to upload changes for {fileName}");
-                            }
-                        }
-
-                        // Only delete the file if it's not being used
-                        if (!IsFileLocked(filePath) && File.Exists(filePath))
-                        {
-                            File.Delete(filePath);
-                            UpdateStatusLabel($"Cleaned up temporary file: {fileName}");
-                        }
-                        else
-                        {
-                            UpdateStatusLabel($"File still in use, skipping cleanup: {fileName}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        UpdateStatusLabel($"Error monitoring {fileName}: {ex.Message}");
+                        UpdateStatusLabel($"Watcher error for {fileName}: {ex.Message}");
                     }
-                    finally
+                };
+
+                watcher.Changed += onChange;
+                watcher.Created += onChange;
+                watcher.Renamed += (s, e) => onChange(s, e);
+                watcher.Deleted += (s, e) => onChange(s, e);
+
+                // ----- Don’t trust process fully: wait for any of these
+                var waitEditorExit = Task.Run(() =>
+                {
+                    try { process?.WaitForExit(); } catch { /* ignore */ }
+                });
+
+                // 1) First, wait until file actually becomes locked (opened) OR a small grace passes.
+                //    This prevents "instant delete on double-click" when the Process exits immediately.
+                bool openedByEditor = await WaitUntilLockedOnceOrTimeout(filePath, TimeSpan.FromSeconds(6));
+
+                // 2) Then wait for it to be fully released & quiet.
+                await waitEditorExit; // if it didn’t exit before, this will usually finish around now
+                await WaitUntilReleasedAndQuiet(filePath, TimeSpan.FromSeconds(30), TimeSpan.FromMilliseconds(600));
+
+                // Final settle
+                await Task.Delay(300);
+
+                // ----- Final verification (checksum vs original)
+                bool finalChanged = false;
+                if (File.Exists(filePath))
+                {
+                    DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+                    long currentFileSize = new FileInfo(filePath).Length;
+                    string currentHash = await ComputeFileHashSafe(filePath);
+
+                    if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+                        currentFileSize != originalFileSize ||
+                        !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (openedFiles.ContainsKey(filePath))
-                        {
-                            openedFiles.Remove(filePath);
-                        }
+                        finalChanged = true;
                     }
+                }
+
+                if (fileChanged || finalChanged)
+                {
+                    UpdateStatusLabel($"Uploading updated {fileName}...");
+                    await UploadFileWithRetry(filePath, fileId, fileName);
+                    UpdateStatusLabel($"Changes uploaded for {fileName}.");
+                }
+                else
+                {
+                    UpdateStatusLabel($"No changes detected in {fileName}.");
+                }
+
+                // ----- Safe cleanup (never immediate; only after full release)
+                if (File.Exists(filePath) && !IsFileLocked(filePath))
+                {
+                    File.Delete(filePath);
+                    UpdateStatusLabel($"{fileName} temp file removed successfully.");
+                }
+                else
+                {
+                    UpdateStatusLabel($"{fileName} is still in use, skipping delete.");
                 }
             }
             catch (Exception ex)
             {
-                UpdateStatusLabel($"Error in file monitoring: {ex.Message}");
+                UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+            }
+            finally
+            {
+                openedFiles.Remove(filePath);
             }
         }
 
-        // Add this helper method to check if a file is locked
+        private async Task<bool> WaitUntilLockedOnceOrTimeout(string filePath, TimeSpan timeout)
+        {
+            // Also look for Office lockfile (~$filename) which exists while the doc is open.
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            string? lockTempPath = GetOfficeLockFilePath(filePath);
+
+            while (sw.Elapsed < timeout)
+            {
+                if (IsFileLocked(filePath) || (lockTempPath != null && File.Exists(lockTempPath)))
+                    return true;
+
+                await Task.Delay(150);
+            }
+            // Timed out without seeing a lock; treat as quick-view scenario — we still won’t delete
+            // until we confirm release/quiet later.
+            return false;
+        }
+
+        private async Task WaitUntilReleasedAndQuiet(string filePath, TimeSpan maxWait, TimeSpan quietFor)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            string? lockTempPath = GetOfficeLockFilePath(filePath);
+
+            // We require a "quiet" window where file is not locked and not being written.
+            DateTime? quietSince = null;
+
+            while (sw.Elapsed < maxWait)
+            {
+                bool locked = IsFileLocked(filePath) || (lockTempPath != null && File.Exists(lockTempPath));
+                if (!locked)
+                {
+                    // Check if file write time is stable during quietFor
+                    DateTime lwt = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : DateTime.UtcNow;
+                    if (quietSince == null) quietSince = DateTime.UtcNow;
+
+                    // If during the quiet window the write time keeps changing, reset quietSince
+                    await Task.Delay(200);
+                    DateTime lwt2 = File.Exists(filePath) ? File.GetLastWriteTimeUtc(filePath) : lwt;
+
+                    if (Math.Abs((lwt2 - lwt).TotalMilliseconds) > 10)
+                    {
+                        quietSince = null; // changed; not quiet
+                    }
+                    else if (quietSince.HasValue && DateTime.UtcNow - quietSince.Value >= quietFor)
+                    {
+                        return; // fully released & quiet long enough
+                    }
+                }
+                else
+                {
+                    quietSince = null; // still in use
+                    await Task.Delay(300);
+                }
+            }
+            // Give up after maxWait; proceed cautiously.
+        }
+
+        private string? GetOfficeLockFilePath(string filePath)
+        {
+            // Office apps create "~$filename.ext" while open
+            try
+            {
+                string dir = Path.GetDirectoryName(filePath)!;
+                string name = Path.GetFileName(filePath);
+                string lockName = "~$" + name;
+                return Path.Combine(dir, lockName);
+            }
+            catch { return null; }
+        }
+
+        // Helper: check if a file is locked by another process
         private bool IsFileLocked(string filePath)
         {
             try
             {
                 using (FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                 {
-                    stream.Close();
+                    // If we got here, it's not locked
                 }
                 return false;
             }
@@ -1847,11 +1932,226 @@ namespace QACORDMS.Client
             {
                 return true;
             }
-            catch (Exception)
+            catch
             {
+                // If anything else, play safe and say locked=false (prevents deadlocks on unexpected errors)
                 return false;
             }
         }
+
+
+        //private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        //{
+        //    try
+        //    {
+        //        if (!File.Exists(filePath))
+        //        {
+        //            UpdateStatusLabel($"Error: File {fileName} does not exist at {filePath}.");
+        //            return;
+        //        }
+
+        //        // Record original state
+        //        DateTime originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //        long originalFileSize = new FileInfo(filePath).Length;
+        //        string originalHash = await ComputeFileHashSafe(filePath);
+
+        //        UpdateStatusLabel($"Monitoring changes in {fileName}...");
+
+        //        // Wait for the process to exit (user closes Word/Excel/etc.)
+        //        await Task.Run(() => process.WaitForExit());
+
+        //        // Wait for file to be released (not locked)
+        //        int maxWait = 30; // seconds
+        //        int waited = 0;
+        //        while (IsFileLocked(filePath) && waited < maxWait)
+        //        {
+        //            await Task.Delay(1000);
+        //            waited++;
+        //        }
+
+        //        // After process closes and file is released, check for changes
+        //        bool fileChanged = false;
+        //        if (File.Exists(filePath))
+        //        {
+        //            DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //            long currentFileSize = new FileInfo(filePath).Length;
+        //            string currentHash = await ComputeFileHashSafe(filePath);
+
+        //            if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+        //                currentFileSize != originalFileSize ||
+        //                !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+        //            {
+        //                fileChanged = true;
+        //            }
+        //        }
+
+        //        if (fileChanged)
+        //        {
+        //            UpdateStatusLabel($"Uploading updated {fileName}...");
+        //            await UploadFileWithRetry(filePath, fileId, fileName);
+        //        }
+        //        else
+        //        {
+        //            UpdateStatusLabel($"No changes detected in {fileName}.");
+        //        }
+
+        //        // Only delete if file is not locked
+        //        if (!IsFileLocked(filePath) && File.Exists(filePath))
+        //        {
+        //            File.Delete(filePath);
+        //            UpdateStatusLabel($"{fileName} temp file removed successfully.");
+        //        }
+        //        else
+        //        {
+        //            UpdateStatusLabel($"{fileName} is still in use, skipping delete.");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        UpdateStatusLabel($"Error updating {fileName}: {ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        openedFiles.Remove(filePath);
+        //    }
+        //}
+
+        //// Helper method to check if a file is locked
+        //private bool IsFileLocked(string filePath)
+        //{
+        //    try
+        //    {
+        //        using (FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        //        {
+        //            stream.Close();
+        //        }
+        //        return false;
+        //    }
+        //    catch (IOException)
+        //    {
+        //        return true;
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        //private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
+        //{
+        //    try
+        //    {
+        //        if (!File.Exists(filePath))
+        //        {
+        //            UpdateStatusLabel($"Error: File {fileName} does not exist at {filePath}.");
+        //            return;
+        //        }
+
+        //        bool fileChanged = false;
+        //        DateTime originalLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //        long originalFileSize = new FileInfo(filePath).Length;
+        //        string originalHash = await ComputeFileHashSafe(filePath);
+
+        //        UpdateStatusLabel($"Monitoring changes in {fileName}...");
+
+        //        using (FileSystemWatcher watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath), Path.GetFileName(filePath)))
+        //        {
+        //            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
+        //            watcher.IncludeSubdirectories = false;
+
+        //            DateTime lastChangeTime = DateTime.MinValue;
+
+        //            watcher.Changed += async (s, e) =>
+        //            {
+        //                try
+        //                {
+        //                    if (DateTime.Now.Subtract(lastChangeTime).TotalMilliseconds < 100)
+        //                        return;
+
+        //                    lastChangeTime = DateTime.Now;
+        //                    await Task.Delay(200);
+
+        //                    if (File.Exists(filePath))
+        //                    {
+        //                        DateTime currentLastWriteTime = File.GetLastWriteTimeUtc(filePath);
+        //                        long currentFileSize = new FileInfo(filePath).Length;
+        //                        string currentHash = await ComputeFileHashSafe(filePath);
+
+        //                        if (Math.Abs((currentLastWriteTime - originalLastWriteTime).TotalSeconds) > 1 ||
+        //                            currentFileSize != originalFileSize ||
+        //                            !string.Equals(currentHash, originalHash, StringComparison.OrdinalIgnoreCase))
+        //                        {
+        //                            fileChanged = true;
+        //                            UpdateStatusLabel($"Change detected in {fileName}, will upload after closing.");
+        //                        }
+        //                    }
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    UpdateStatusLabel($"Watcher error for {fileName}: {ex.Message}");
+        //                }
+        //            };
+
+        //            watcher.EnableRaisingEvents = true;
+
+        //            try
+        //            {
+        //                // Wait for the process to exit
+        //                await Task.Run(() => process.WaitForExit());
+
+        //                // Important: Wait a bit after process exits before checking file
+        //                await Task.Delay(2000);
+
+        //                // Check if any other process is using the file
+        //                while (IsFileLocked(filePath))
+        //                {
+        //                    await Task.Delay(1000); // Wait 1 second before checking again
+        //                }
+
+        //                if (fileChanged)
+        //                {
+        //                    UpdateStatusLabel($"Uploading changes to {fileName}...");
+        //                    var response = await _apiHelper.ReplaceFileAsync(fileId, filePath);
+        //                    if (response.IsSuccessStatusCode)
+        //                    {
+        //                        UpdateStatusLabel($"Changes uploaded for {fileName}");
+        //                    }
+        //                    else
+        //                    {
+        //                        UpdateStatusLabel($"Failed to upload changes for {fileName}");
+        //                    }
+        //                }
+
+        //                // Only delete the file if it's not being used
+        //                if (!IsFileLocked(filePath) && File.Exists(filePath))
+        //                {
+        //                    File.Delete(filePath);
+        //                    UpdateStatusLabel($"Cleaned up temporary file: {fileName}");
+        //                }
+        //                else
+        //                {
+        //                    UpdateStatusLabel($"File still in use, skipping cleanup: {fileName}");
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                UpdateStatusLabel($"Error monitoring {fileName}: {ex.Message}");
+        //            }
+        //            finally
+        //            {
+        //                if (openedFiles.ContainsKey(filePath))
+        //                {
+        //                    openedFiles.Remove(filePath);
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        UpdateStatusLabel($"Error in file monitoring: {ex.Message}");
+        //    }
+        //}
+
 
         //private async Task MonitorAndReplaceFileOnClose(string filePath, string fileId, string fileName, System.Diagnostics.Process process)
         //{
