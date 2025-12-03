@@ -25,6 +25,7 @@ namespace QACORDMS.Client
         {
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             InitializeComponent();
+            ThemeHelper.Apply(this);
             LoadFolderStructureAsync();
         }
 

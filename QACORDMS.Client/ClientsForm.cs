@@ -18,6 +18,7 @@ namespace QACORDMS.Client
         {
             _apiHelper = apiHelper;
             InitializeComponent();
+            ThemeHelper.Apply(this);
 
             // Add KeyDown event for searchTextBox to handle Enter key
             searchTextBox.KeyDown += (sender, e) =>

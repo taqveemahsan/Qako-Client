@@ -15,6 +15,7 @@ namespace QACORDMS.Client
         {
             InitializeComponent();
             _apiHelper = apiHelper;
+            ThemeHelper.Apply(this);
         }
 
         private async void btnLogin_Click(object sender, EventArgs e)

@@ -48,9 +48,9 @@
             SuspendLayout();
 
             // menuStrip
-            menuStrip.BackColor = Color.FromArgb(0, 102, 204);
-            menuStrip.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
-            menuStrip.ForeColor = Color.White;
+            menuStrip.BackColor = Color.White;
+            menuStrip.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+            menuStrip.ForeColor = Color.FromArgb(17, 24, 39);
             menuStrip.ImageScalingSize = new Size(24, 24);
             menuStrip.Items.AddRange(new ToolStripItem[] { refreshMenuItem, addUserMenuItem, settingsMenuItem, createNewMenuItem, copyPathMenuItem, updateMenuItem });
             menuStrip.Location = new Point(0, 0);
@@ -64,24 +64,24 @@
 
             // refreshMenuItem
             refreshMenuItem.Name = "refreshMenuItem";
-            refreshMenuItem.Size = new Size(85, 29);
+            refreshMenuItem.Size = new Size(87, 29);
             refreshMenuItem.Text = "Clients";
             refreshMenuItem.Click += refreshMenuItem_Click;
 
             // settingsMenuItem
             settingsMenuItem.Name = "settingsMenuItem";
-            settingsMenuItem.Size = new Size(98, 29);
+            settingsMenuItem.Size = new Size(102, 29);
             settingsMenuItem.Text = "Settings";
             settingsMenuItem.Click += SettingsMenuItem_Click;
 
             // addUserMenuItem
             addUserMenuItem.Name = "addUserMenuItem";
-            addUserMenuItem.Size = new Size(90, 29);
+            addUserMenuItem.Size = new Size(91, 29);
             addUserMenuItem.Text = "Users";
 
             // updateMenuItem
             updateMenuItem.Name = "updateMenuItem";
-            updateMenuItem.Size = new Size(90, 29);
+            updateMenuItem.Size = new Size(96, 29);
             updateMenuItem.Text = "Update";
             updateMenuItem.Enabled = false; // Initially disabled
             updateMenuItem.Click += UpdateMenuItem_Click;
@@ -148,9 +148,10 @@
 
             // clientsViewBox
             clientsViewBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
-            clientsViewBox.BackColor = Color.White;
-            clientsViewBox.Font = new Font("Segoe UI", 11F);
-            clientsViewBox.ForeColor = Color.Black;
+            clientsViewBox.BackColor = Color.FromArgb(250, 252, 255);
+            clientsViewBox.BorderStyle = BorderStyle.FixedSingle;
+            clientsViewBox.Font = new Font("Segoe UI", 10F);
+            clientsViewBox.ForeColor = Color.FromArgb(55, 65, 81);
             clientsViewBox.Location = new Point(15, 154);
             clientsViewBox.Name = "clientsViewBox";
             clientsViewBox.Size = new Size(280, 786);
@@ -162,10 +163,10 @@
 
             // projectComboBox
             projectComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            projectComboBox.BackColor = Color.FromArgb(245, 245, 245);
+            projectComboBox.BackColor = Color.White;
             projectComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             projectComboBox.FlatStyle = FlatStyle.Flat;
-            projectComboBox.Font = new Font("Segoe UI", 12F);
+            projectComboBox.Font = new Font("Segoe UI", 11F);
             projectComboBox.Items.AddRange(new object[] { "Audit" });
             projectComboBox.Location = new Point(15, 111);
             projectComboBox.Name = "projectComboBox";
@@ -176,11 +177,11 @@
             // listView1
             listView1.Alignment = ListViewAlignment.SnapToGrid;
             listView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            listView1.BackColor = Color.White;
-            listView1.BorderStyle = BorderStyle.None;
+            listView1.BackColor = Color.FromArgb(248, 250, 252);
+            listView1.BorderStyle = BorderStyle.FixedSingle;
             listView1.ContextMenuStrip = NewFolder;
-            listView1.Font = new Font("Segoe UI", 9F);
-            listView1.ForeColor = Color.Black;
+            listView1.Font = new Font("Segoe UI", 9.5F);
+            listView1.ForeColor = Color.FromArgb(31, 41, 55);
             listView1.FullRowSelect = true;
             listView1.LargeImageList = imageList1;
             listView1.Location = new Point(305, 154);
@@ -191,6 +192,7 @@
             listView1.TabIndex = 3;
             listView1.UseCompatibleStateImageBehavior = false;
             listView1.View = View.Details;
+            listView1.GridLines = true;
             listView1.Columns.Add("Name", 400);
             listView1.Columns.Add("Type", 200);
             listView1.Columns.Add("Size", 150);
@@ -204,9 +206,9 @@
             listView1.AllowDrop = true;
 
             // NewFolder
-            NewFolder.BackColor = Color.FromArgb(173, 216, 230);
+            NewFolder.BackColor = Color.White;
             NewFolder.Font = new Font("Segoe UI", 11F);
-            NewFolder.ForeColor = Color.FromArgb(0, 102, 204);
+            NewFolder.ForeColor = Color.FromArgb(17, 24, 39);
             NewFolder.ImageScalingSize = new Size(24, 24);
             NewFolder.Name = "NewFolder";
             NewFolder.Size = new Size(61, 4);
@@ -218,9 +220,9 @@
             imageList1.TransparentColor = Color.Transparent;
 
             // statusStrip
-            statusStrip.BackColor = Color.FromArgb(0, 102, 204);
-            statusStrip.Font = new Font("Segoe UI", 11F);
-            statusStrip.ForeColor = Color.White;
+            statusStrip.BackColor = Color.White;
+            statusStrip.Font = new Font("Segoe UI", 10F);
+            statusStrip.ForeColor = Color.FromArgb(55, 65, 81);
             statusStrip.ImageScalingSize = new Size(24, 24);
             statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel });
             statusStrip.Location = new Point(0, 969);
@@ -231,16 +233,16 @@
 
             // statusLabel
             statusLabel.Name = "statusLabel";
-            statusLabel.Size = new Size(143, 25);
+            statusLabel.Size = new Size(129, 25);
             statusLabel.Text = "Loaded 3 items.";
 
             // button1 (Logout)
             button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            button1.BackColor = Color.FromArgb(0, 102, 204);
-            button1.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            button1.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            button1.BackColor = Color.FromArgb(37, 99, 235);
+            button1.FlatAppearance.BorderColor = Color.FromArgb(30, 64, 175);
+            button1.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 64, 175);
             button1.FlatStyle = FlatStyle.Flat;
-            button1.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            button1.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             button1.ForeColor = Color.White;
             button1.Location = new Point(1484, 41);
             button1.Name = "button1";
@@ -251,12 +253,12 @@
             button1.Click += button1_Click;
 
             // backButton
-            backButton.BackColor = Color.FromArgb(0, 102, 204);
-            backButton.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            backButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            backButton.BackColor = Color.White;
+            backButton.FlatAppearance.BorderColor = Color.FromArgb(226, 232, 240);
+            backButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(241, 245, 249);
             backButton.FlatStyle = FlatStyle.Flat;
-            backButton.Font = new Font("Segoe UI", 7F, FontStyle.Bold);
-            backButton.ForeColor = Color.White;
+            backButton.Font = new Font("Segoe UI Semibold", 8F, FontStyle.Bold);
+            backButton.ForeColor = Color.FromArgb(37, 99, 235);
             backButton.Location = new Point(15, 41);
             backButton.Name = "backButton";
             backButton.Size = new Size(77, 32);
@@ -266,7 +268,7 @@
             backButton.Click += BackMenuItem_Click;
 
             // viewToolStrip
-            viewToolStrip.BackColor = Color.FromArgb(0, 102, 204);
+            viewToolStrip.BackColor = Color.White;
             viewToolStrip.Dock = DockStyle.Bottom;
             viewToolStrip.ImageScalingSize = new Size(24, 24);
             viewToolStrip.Items.AddRange(new ToolStripItem[] { smallIconsButton, largeIconsButton, detailsButton });
@@ -278,7 +280,7 @@
 
             // smallIconsButton
             smallIconsButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            smallIconsButton.ForeColor = Color.White;
+            smallIconsButton.ForeColor = Color.FromArgb(37, 99, 235);
             smallIconsButton.Margin = new Padding(5, 1, 5, 1);
             smallIconsButton.Name = "smallIconsButton";
             smallIconsButton.Size = new Size(88, 24);
@@ -287,7 +289,7 @@
 
             // largeIconsButton
             largeIconsButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            largeIconsButton.ForeColor = Color.White;
+            largeIconsButton.ForeColor = Color.FromArgb(37, 99, 235);
             largeIconsButton.Margin = new Padding(5, 1, 5, 1);
             largeIconsButton.Name = "largeIconsButton";
             largeIconsButton.Size = new Size(88, 24);
@@ -296,7 +298,7 @@
 
             // detailsButton
             detailsButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            detailsButton.ForeColor = Color.White;
+            detailsButton.ForeColor = Color.FromArgb(37, 99, 235);
             detailsButton.Margin = new Padding(5, 1, 5, 1);
             detailsButton.Name = "detailsButton";
             detailsButton.Size = new Size(59, 24);
@@ -305,11 +307,11 @@
 
             // addPermissionsButton
             addPermissionsButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            addPermissionsButton.BackColor = Color.FromArgb(0, 102, 204);
-            addPermissionsButton.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            addPermissionsButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            addPermissionsButton.BackColor = Color.FromArgb(37, 99, 235);
+            addPermissionsButton.FlatAppearance.BorderColor = Color.FromArgb(30, 64, 175);
+            addPermissionsButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 64, 175);
             addPermissionsButton.FlatStyle = FlatStyle.Flat;
-            addPermissionsButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            addPermissionsButton.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
             addPermissionsButton.ForeColor = Color.White;
             addPermissionsButton.Location = new Point(1358, 111);
             addPermissionsButton.Name = "addPermissionsButton";
@@ -321,8 +323,8 @@
 
             // projectLabel
             projectLabel.AutoSize = true;
-            projectLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            projectLabel.ForeColor = Color.FromArgb(0, 102, 204);
+            projectLabel.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold);
+            projectLabel.ForeColor = Color.FromArgb(17, 24, 39);
             projectLabel.Location = new Point(16, 79);
             projectLabel.Name = "projectLabel";
             projectLabel.Size = new Size(88, 28);
@@ -330,7 +332,7 @@
             projectLabel.Text = "Projects";
 
             // loaderOverlay
-            loaderOverlay.BackColor = Color.Transparent;
+            loaderOverlay.BackColor = Color.FromArgb(60, 255, 255, 255);
             loaderOverlay.Controls.Add(loaderPictureBox);
             loaderOverlay.Controls.Add(loaderLabel);
             loaderOverlay.Dock = DockStyle.Fill;
@@ -352,8 +354,8 @@
             // loaderLabel
             loaderLabel.AutoSize = true;
             loaderLabel.BackColor = Color.Transparent;
-            loaderLabel.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
-            loaderLabel.ForeColor = Color.FromArgb(0, 102, 204);
+            loaderLabel.Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold);
+            loaderLabel.ForeColor = Color.FromArgb(37, 99, 235);
             loaderLabel.Size = new Size(127, 32);
             loaderLabel.TabIndex = 1;
             loaderLabel.Text = "Loading...";
@@ -370,11 +372,11 @@
 
             // searchButton
             searchButton.Anchor = AnchorStyles.Top;
-            searchButton.BackColor = Color.FromArgb(0, 102, 204);
-            searchButton.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 153);
-            searchButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 51, 153);
+            searchButton.BackColor = Color.FromArgb(37, 99, 235);
+            searchButton.FlatAppearance.BorderColor = Color.FromArgb(30, 64, 175);
+            searchButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 64, 175);
             searchButton.FlatStyle = FlatStyle.Flat;
-            searchButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            searchButton.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             searchButton.ForeColor = Color.White;
             searchButton.Location = new Point(1290, 41);
             searchButton.Name = "searchButton";
@@ -388,7 +390,7 @@
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
 
             // MainForm
-            BackColor = Color.FromArgb(173, 216, 230);
+            BackColor = Color.FromArgb(245, 247, 250);
             ClientSize = new Size(1600, 1000);
             Controls.Add(loaderOverlay);
             Controls.Add(projectLabel);

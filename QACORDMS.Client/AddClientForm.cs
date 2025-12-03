@@ -20,6 +20,7 @@ namespace QACORDMS.Client
         {
             _apiHelper = apiHelper;
             InitializeComponent();
+            ThemeHelper.Apply(this);
         }
 
         private async void addButton_Click(object sender, EventArgs e)

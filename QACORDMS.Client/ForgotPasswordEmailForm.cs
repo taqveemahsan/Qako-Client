@@ -20,6 +20,7 @@ namespace QACORDMS.Client
         {
             InitializeComponent();
             _apiHelper = apiHelper;
+            ThemeHelper.Apply(this);
 
             // Attach event handlers
             btnSubmit.Click += btnSubmit_Click;

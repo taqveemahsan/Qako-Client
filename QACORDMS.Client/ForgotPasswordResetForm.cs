@@ -15,6 +15,7 @@ namespace QACORDMS.Client
             InitializeComponent();
             _apiHelper = apiHelper;
             _email = email;
+            ThemeHelper.Apply(this);
 
             // Attach event handlers
             btnReset.Click += btnReset_Click;

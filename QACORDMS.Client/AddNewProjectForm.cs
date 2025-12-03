@@ -21,6 +21,7 @@ namespace QACORDMS.Client
             InitializeComponent();
             _clientId = clientId;
             _apiHelper = apiHelper;
+            ThemeHelper.Apply(this);
         }
 
         private async void btnCreateProject_Click(object sender, EventArgs e)

@@ -22,6 +22,7 @@ namespace QACORDMS.Client
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             _projectId = projectId;
             InitializeComponent();
+            ThemeHelper.Apply(this);
             LoadUsersAndPermissionsAsync();
         }
 

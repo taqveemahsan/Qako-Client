@@ -17,6 +17,7 @@ namespace QACORDMS.Client
         {
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             InitializeComponent();
+            ThemeHelper.Apply(this);
             LoadUsersAsync().ConfigureAwait(false);
 
             this.Resize += UserForm_Resize; // Subscribe to the Resize event

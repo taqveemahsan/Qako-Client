@@ -67,6 +67,12 @@ namespace QACORDMS.Client
             _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
             _userRole = userRole;
             InitializeComponent();
+            ThemeHelper.Apply(this);
+
+            var doubleBufferProp = typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+            doubleBufferProp?.SetValue(listView1, true);
+            doubleBufferProp?.SetValue(clientsViewBox, true);
+
             var settings = LoadSettings();
             currentVersion = settings.CurrentVersion ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString();
             updateApiUrl = settings.UpdateApiUrl ?? "https://test.ibt-learning.com/api/Client/check-update";
